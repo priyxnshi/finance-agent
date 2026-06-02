@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #FAFAF8;
+  --surface: #FFFFFF;
+  --surface2: #F5F4F1;
+  --surface3: #EEECEA;
+  --border: #E8E6E1;
+  --border2: #D0CEC8;
+  --text: #1A1917;
+  --text2: #6B6860;
+  --text3: #A8A69F;
+  --green: #2D6A4F;
+  --green-bg: #EBF5EF;
+  --amber: #92400E;
+  --amber-bg: #FEF3C7;
+  --blue: #1E40AF;
+  --blue-bg: #EFF6FF;
+  --red: #991B1B;
+  --red-bg: #FEF2F2;
+}
+
+.dark-mode {
+  --bg: #1C1B18;
+  --surface: #252420;
+  --surface2: #2E2D29;
+  --surface3: #383630;
+  --border: #38362F;
+  --border2: #4A4840;
+  --text: #F0EDE8;
+  --text2: #9B9890;
+  --text3: #55534C;
+  --green: #34D399;
+  --green-bg: #052E1C;
+  --amber: #FCD34D;
+  --amber-bg: #3D1A00;
+  --blue: #93C5FD;
+  --blue-bg: #0F2340;
+  --red: #FCA5A5;
+  --red-bg: #3D0A0A;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
