@@ -1,0 +1,13 @@
+amount,category,date,description
+480,Food & Dining,2026-06-19,Blue Tokai Coffee
+2340,Shopping,2026-06-17,Amazon
+8900,Travel,2026-06-16,Indigo Airlines
+649,Subscriptions,2026-06-15,Netflix
+15000,Investment,2026-06-14,HDFC Mutual Fund SIP
+310,Transport,2026-06-13,Uber
+4200,Housing,2026-06-12,Society Maintenance
+1860,Food & Dining,2026-06-11,BigBasket
+119,Subscriptions,2026-06-10,Spotify
+-50,Food & Dining,2026-06-09,Invalid negative amount
+1200,,2026-06-08,Missing category
+600,Transport,not-a-date,Bad date format
