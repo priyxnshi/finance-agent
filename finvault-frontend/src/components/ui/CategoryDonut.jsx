@@ -17,6 +17,16 @@ function CustomTooltip({ active, payload }) {
 export default function CategoryDonut({ data }) {
   const total = data.reduce((sum, d) => sum + d.value, 0)
 
+  if (data.length === 0) {
+    return (
+      <div className="h-[240px] flex items-center justify-center text-center px-6">
+        <p className="text-xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+          No categorized spending yet — add or import some expenses to see a breakdown.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="relative">
       <ResponsiveContainer width="100%" height={240}>

@@ -12,6 +12,7 @@ across SQLite/Postgres, and easy to read — worth revisiting only if the
 expenses table grows very large.
 """
 import calendar
+import statistics
 from datetime import date, timedelta
 from typing import Optional
 
@@ -19,12 +20,18 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.expense import Expense
+from app.models.goal import Goal
 from app.schemas.analytics import (
     CategoryBreakdownItem,
     SummaryResponse,
     MonthlyTrendPoint,
     TrendsResponse,
     CategoriesResponse,
+    HeatmapDay,
+    HeatmapResponse,
+    HealthScoreFactor,
+    HealthScoreResponse,
+    MonthlySummaryResponse,
 )
 
 
@@ -72,14 +79,21 @@ def get_weekly_spending(db: Session, today: Optional[date] = None) -> float:
     return _sum_amount_between(db, start, end)
 
 
-def get_category_breakdown(db: Session) -> list[CategoryBreakdownItem]:
-    rows = db.execute(
-        select(
-            Expense.category,
-            func.coalesce(func.sum(Expense.amount), 0.0).label("total"),
-            func.count(Expense.id).label("count"),
-        ).group_by(Expense.category)
-    ).all()
+def get_category_breakdown(
+    db: Session, start: Optional[date] = None, end: Optional[date] = None
+) -> list[CategoryBreakdownItem]:
+    query = select(
+        Expense.category,
+        func.coalesce(func.sum(Expense.amount), 0.0).label("total"),
+        func.count(Expense.id).label("count"),
+    )
+    if start:
+        query = query.where(Expense.date >= start)
+    if end:
+        query = query.where(Expense.date <= end)
+    query = query.group_by(Expense.category)
+
+    rows = db.execute(query).all()
 
     total_spending = sum(row.total for row in rows) or 0.0
 
@@ -96,8 +110,10 @@ def get_category_breakdown(db: Session) -> list[CategoryBreakdownItem]:
     return breakdown
 
 
-def get_top_category(db: Session) -> tuple[Optional[str], float]:
-    breakdown = get_category_breakdown(db)
+def get_top_category(
+    db: Session, start: Optional[date] = None, end: Optional[date] = None
+) -> tuple[Optional[str], float]:
+    breakdown = get_category_breakdown(db, start=start, end=end)
     if not breakdown:
         return None, 0.0
     top = breakdown[0]
@@ -173,4 +189,169 @@ def build_categories(db: Session) -> CategoriesResponse:
     return CategoriesResponse(
         categories=breakdown,
         total_spending=get_total_spending(db),
+    )
+
+
+# --- Phase 3: heatmap ----------------------------------------------------
+
+
+def build_heatmap(db: Session, days: int = 365, today: Optional[date] = None) -> HeatmapResponse:
+    """
+    Daily spending totals for the last `days` days. Only days with at least
+    one transaction are included — react-calendar-heatmap renders the full
+    date grid itself and treats missing dates as empty, so there's no need
+    to pad in zero-spend days here.
+    """
+    today = today or date.today()
+    start = today - timedelta(days=days - 1)
+
+    rows = db.execute(
+        select(
+            Expense.date,
+            func.coalesce(func.sum(Expense.amount), 0.0).label("total"),
+            func.count(Expense.id).label("count"),
+        )
+        .where(Expense.date >= start, Expense.date <= today)
+        .group_by(Expense.date)
+        .order_by(Expense.date.asc())
+    ).all()
+
+    day_entries = [
+        HeatmapDay(date=row.date, total=float(row.total), transaction_count=int(row.count)) for row in rows
+    ]
+    max_daily_total = max((d.total for d in day_entries), default=0.0)
+
+    return HeatmapResponse(days=day_entries, max_daily_total=max_daily_total)
+
+
+# --- Phase 3: budget health score -----------------------------------------
+#
+# Deterministic heuristic, not ML — four factors, each scored 0-100, combined
+# with fixed weights. Each factor degrades gracefully to a neutral 70 when
+# there isn't enough data yet, so a brand-new account doesn't show a
+# misleadingly bad (or good) score.
+
+
+def _trend_factor(db: Session, today: date) -> HealthScoreFactor:
+    growth, _, previous_total = get_spending_growth_percent(db, today)
+    if growth is None:
+        score = 70.0
+        description = "Not enough spending history yet to measure month-over-month trend."
+    else:
+        # Flat or falling spending scores well; each 1% of growth costs 2 points.
+        score = max(0.0, min(100.0, 100 - growth * 2))
+        direction = "down" if growth < 0 else "up"
+        description = f"Spending is {direction} {abs(growth):.1f}% vs last month."
+    return HealthScoreFactor(name="Spending Trend", score=round(score, 1), weight=0.35, description=description)
+
+
+def _consistency_factor(db: Session, today: date) -> HealthScoreFactor:
+    weekly_totals = []
+    for i in range(8):
+        week_end = today - timedelta(days=7 * i)
+        week_start = week_end - timedelta(days=6)
+        total = _sum_amount_between(db, week_start, week_end)
+        if total > 0:
+            weekly_totals.append(total)
+
+    if len(weekly_totals) < 3:
+        score = 70.0
+        description = "Not enough weekly history yet to measure spending consistency."
+    else:
+        mean = statistics.mean(weekly_totals)
+        stdev = statistics.pstdev(weekly_totals)
+        coefficient_of_variation = (stdev / mean) if mean else 0
+        score = max(0.0, min(100.0, 100 - coefficient_of_variation * 100))
+        description = "Weekly spending is fairly steady." if score >= 70 else "Weekly spending varies a lot."
+    return HealthScoreFactor(name="Spending Consistency", score=round(score, 1), weight=0.25, description=description)
+
+
+def _category_concentration_factor(db: Session) -> HealthScoreFactor:
+    breakdown = get_category_breakdown(db)
+    if len(breakdown) < 2:
+        score = 70.0
+        description = "Not enough category history yet to measure spending concentration."
+    else:
+        # Herfindahl-style concentration index: sum of squared category shares.
+        # 1.0 = all spend in one category, ~1/n = spread evenly across n categories.
+        concentration = sum((item.percentage / 100) ** 2 for item in breakdown)
+        score = max(0.0, min(100.0, 100 - concentration * 100))
+        description = (
+            "Spending is concentrated in one or two categories."
+            if score < 60
+            else "Spending is reasonably spread across categories."
+        )
+    return HealthScoreFactor(
+        name="Category Diversification", score=round(score, 1), weight=0.20, description=description
+    )
+
+
+def _goal_progress_factor(db: Session, today: date) -> HealthScoreFactor:
+    # Imported here (not at module top) to avoid a circular import, since
+    # goal_service doesn't need anything from analytics_service.
+    from app.services.goal_service import compute_goal_progress
+
+    goals = list(db.scalars(select(Goal)))
+    if not goals:
+        score = 70.0
+        description = "No savings goals set yet."
+    else:
+        progresses = [compute_goal_progress(g, today).progress_percent for g in goals]
+        score = sum(progresses) / len(progresses)
+        description = f"Average progress across {len(goals)} goal(s): {score:.0f}%."
+    return HealthScoreFactor(name="Goal Progress", score=round(score, 1), weight=0.20, description=description)
+
+
+def build_health_score(db: Session, today: Optional[date] = None) -> HealthScoreResponse:
+    today = today or date.today()
+
+    factors = [
+        _trend_factor(db, today),
+        _consistency_factor(db, today),
+        _category_concentration_factor(db),
+        _goal_progress_factor(db, today),
+    ]
+
+    overall = sum(f.score * f.weight for f in factors)
+    overall = round(max(0.0, min(100.0, overall)))
+
+    if overall >= 85:
+        label = "Excellent"
+    elif overall >= 70:
+        label = "Good"
+    elif overall >= 50:
+        label = "Fair"
+    else:
+        label = "Needs Attention"
+
+    return HealthScoreResponse(score=overall, label=label, factors=factors)
+
+
+# --- Phase 3: monthly summary ----------------------------------------------
+
+
+def build_monthly_summary(db: Session, today: Optional[date] = None) -> MonthlySummaryResponse:
+    today = today or date.today()
+    start, _ = _month_range(today.year, today.month)
+
+    total_spent = get_monthly_spending(db, today)
+    days_elapsed = max((today - start).days + 1, 1)
+    average_daily_spend = round(total_spent / days_elapsed, 2)
+
+    count_result = db.scalar(
+        select(func.count(Expense.id)).where(Expense.date >= start, Expense.date <= today)
+    )
+    transaction_count = int(count_result or 0)
+
+    top_category, top_category_amount = get_top_category(db, start=start, end=today)
+    growth, _, _ = get_spending_growth_percent(db, today)
+
+    return MonthlySummaryResponse(
+        month=f"{today.year:04d}-{today.month:02d}",
+        total_spent=total_spent,
+        transaction_count=transaction_count,
+        average_daily_spend=average_daily_spend,
+        top_category=top_category,
+        top_category_amount=top_category_amount,
+        change_vs_previous_month_percent=growth,
     )

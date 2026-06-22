@@ -16,7 +16,7 @@ from starlette.requests import Request
 
 from app.config import settings
 from app.database import init_db
-from app.routes import analytics, expenses, upload
+from app.routes import analytics, expenses, goals, upload
 
 app = FastAPI(
     title=settings.app_name,
@@ -68,6 +68,7 @@ async def db_exception_handler(request: Request, exc: SQLAlchemyError):
 app.include_router(expenses.router)
 app.include_router(upload.router)
 app.include_router(analytics.router)
+app.include_router(goals.router)
 
 
 @app.get("/", tags=["Health"])

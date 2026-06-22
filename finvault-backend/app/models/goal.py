@@ -4,14 +4,11 @@ Goal table.
 The spec asks for id, target_amount, and target_date. Two small additions
 have been made beyond that minimum, called out here explicitly:
 
-  - `name`: the frontend Goals page already displays a goal name
-    (e.g. "Emergency Fund"). Without it, a goal is just an anonymous number.
-  - `current_amount`: tracks progress toward the goal. Defaults to 0 so it's
-    safe to ignore until a later phase wires up contributions.
+  - `name`: the frontend Goals page displays a goal name (e.g. "Emergency Fund").
+  - `current_amount`: tracks progress toward the goal, updated via PUT /goal/{id}.
 
-No goal CRUD routes are built in this phase per your instructions — this
-model just establishes the table so the column shape is settled before the
-frontend integration in a later phase.
+`created_at` doubles as the goal's start date for pace calculations in
+app/services/goal_service.py (Phase 3) — see compute_goal_progress().
 """
 from sqlalchemy import Column, Integer, Float, String, Date, DateTime
 from sqlalchemy.sql import func

@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 import {
   LayoutGrid,
   Receipt,
@@ -11,12 +11,12 @@ import {
 } from 'lucide-react'
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutGrid, end: true },
-  { to: '/expenses', label: 'Expenses', icon: Receipt },
-  { to: '/goals', label: 'Goals', icon: Target },
-  { to: '/insights', label: 'Insights', icon: Sparkles },
-  { to: '/federated-learning', label: 'Federated Learning', icon: Network },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/app', label: 'Dashboard', icon: LayoutGrid, end: true },
+  { to: '/app/expenses', label: 'Expenses', icon: Receipt },
+  { to: '/app/goals', label: 'Goals', icon: Target },
+  { to: '/app/insights', label: 'Insights', icon: Sparkles },
+  { to: '/app/federated-learning', label: 'Federated Learning', icon: Network },
+  { to: '/app/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
 export default function Sidebar({ open, onClose }) {
@@ -34,7 +34,7 @@ export default function Sidebar({ open, onClose }) {
         lg:static lg:translate-x-0
         ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
-        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-line-light dark:border-line">
+        <Link to="/" className="h-16 flex items-center gap-2.5 px-5 border-b border-line-light dark:border-line hover:bg-ink-950/[0.02] dark:hover:bg-white/[0.02] transition-colors">
           <div className="h-8 w-8 rounded-md bg-ink-950 dark:bg-vault flex items-center justify-center shrink-0">
             <Vault size={17} className="text-vault dark:text-ink-950" strokeWidth={2} />
           </div>
@@ -46,7 +46,7 @@ export default function Sidebar({ open, onClose }) {
               Personal Finance Agent
             </p>
           </div>
-        </div>
+        </Link>
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
           <p className="px-3 mb-2 text-2xs font-semibold uppercase tracking-wider text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
@@ -88,7 +88,7 @@ export default function Sidebar({ open, onClose }) {
               Build status
             </p>
             <p className="text-xs text-ledger-light-secondary dark:text-ledger-dark-secondary leading-relaxed">
-              Phase 1 — UI shell complete. Live data connects in Phase 2.
+              Backend live (Phase 2). Charts + forecasting connect in Phase 3.
             </p>
           </div>
         </div>

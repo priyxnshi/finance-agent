@@ -4,12 +4,12 @@ import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
 
 const titles = {
-  '/': 'Dashboard',
-  '/expenses': 'Expenses',
-  '/goals': 'Goals',
-  '/insights': 'Insights',
-  '/federated-learning': 'Federated Learning',
-  '/settings': 'Settings',
+  '/app': 'Dashboard',
+  '/app/expenses': 'Expenses',
+  '/app/goals': 'Goals',
+  '/app/insights': 'Insights',
+  '/app/federated-learning': 'Federated Learning',
+  '/app/settings': 'Settings',
 }
 
 export default function Layout() {

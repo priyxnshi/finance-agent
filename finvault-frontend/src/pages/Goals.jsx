@@ -1,70 +1,100 @@
-import React from 'react'
-import { Plus, Calendar } from 'lucide-react'
-import Card from '../components/ui/Card.jsx'
-import Button from '../components/ui/Button.jsx'
-import { goals } from '../data/mockData.js'
-
-const colorMap = {
-  'signal-green': { bar: 'bg-signal-green', text: 'text-signal-green' },
-  'signal-blue': { bar: 'bg-signal-blue', text: 'text-signal-blue' },
-  vault: { bar: 'bg-vault', text: 'text-vault-dim dark:text-vault-light' },
-  'signal-amber': { bar: 'bg-signal-amber', text: 'text-signal-amber' },
-}
+import React, { useState, useEffect } from 'react'
+import { Plus } from 'lucide-react'
+import GoalCard from '../components/ui/GoalCard.jsx'
+import GoalModal from '../components/ui/GoalModal.jsx'
+import { LoadingState, ErrorState } from '../components/ui/LoadingError.jsx'
+import { getGoals } from '../services/api.js'
 
 export default function Goals() {
+  const [goals, setGoals] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [showModal, setShowModal] = useState(false)
+
+  async function fetchGoals() {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await getGoals()
+      setGoals(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchGoals() }, [])
+
+  function handleCreated(goal) {
+    setGoals((prev) => [...prev, goal])
+  }
+
+  function handleUpdate(updated) {
+    setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)))
+  }
+
+  function handleDelete(id) {
+    setGoals((prev) => prev.filter((g) => g.id !== id))
+  }
+
+  const totalTarget = goals.reduce((s, g) => s + g.target_amount, 0)
+  const totalCurrent = goals.reduce((s, g) => s + (g.current_amount || 0), 0)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-ledger-light-secondary dark:text-ledger-dark-secondary">
-          4 active goals · ₹7,70,700 saved of ₹18,40,000 targeted
+          {goals.length > 0
+            ? `${goals.length} active goal${goals.length > 1 ? 's' : ''} · \u20B9${Math.round(totalCurrent).toLocaleString('en-IN')} saved of \u20B9${Math.round(totalTarget).toLocaleString('en-IN')} targeted`
+            : 'No goals yet — create one to start tracking.'}
         </p>
-        <Button>
+        <button
+          onClick={() => setShowModal(true)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-ink-950 dark:bg-vault text-paper-raised dark:text-ink-950
+            px-3.5 py-2 text-sm font-medium hover:opacity-90 transition"
+        >
           <Plus size={15} /> New Goal
-        </Button>
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {goals.map((g) => {
-          const pct = Math.min(100, Math.round((g.current / g.target) * 100))
-          const c = colorMap[g.color]
-          return (
-            <Card key={g.id} accent={g.color === 'signal-green' ? 'green' : g.color === 'signal-blue' ? 'blue' : g.color === 'vault' ? 'vault' : 'amber'}>
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-display font-semibold tracking-tight">{g.name}</h3>
-                  <p className="flex items-center gap-1.5 text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-1">
-                    <Calendar size={12} /> Target {g.deadline}
-                  </p>
-                </div>
-                <span className={`ledger-num text-lg font-semibold ${c.text}`}>{pct}%</span>
-              </div>
+      {loading && <LoadingState label="Loading goals…" />}
+      {!loading && error && <ErrorState message={error} onRetry={fetchGoals} />}
 
-              <div className="h-2 rounded-full bg-ink-950/[0.06] dark:bg-white/[0.08] overflow-hidden mb-3">
-                <div
-                  className={`h-full rounded-full ${c.bar} transition-all duration-500`}
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="ledger-num font-medium">₹{g.current.toLocaleString('en-IN')}</span>
-                <span className="ledger-num text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-                  of ₹{g.target.toLocaleString('en-IN')}
-                </span>
-              </div>
-            </Card>
-          )
-        })}
-      </div>
-
-      <Card accent="vault" className="border-dashed">
-        <div className="flex flex-col items-center text-center py-6 gap-2">
-          <p className="font-display font-semibold text-sm">Goal forecasting arrives in Phase 5</p>
-          <p className="text-xs text-ledger-light-secondary dark:text-ledger-dark-secondary max-w-md">
-            Once the AI agent memory layer is connected, Finvault will project completion dates and suggest contribution adjustments automatically.
+      {!loading && !error && goals.length === 0 && (
+        <div
+          onClick={() => setShowModal(true)}
+          className="rounded-card border-2 border-dashed border-line-light dark:border-line
+            flex flex-col items-center justify-center py-16 gap-3 cursor-pointer
+            hover:border-vault/40 transition-colors group"
+        >
+          <div className="h-12 w-12 rounded-full bg-vault/10 grid place-items-center group-hover:bg-vault/20 transition-colors">
+            <Plus size={22} className="text-vault" />
+          </div>
+          <p className="font-display font-semibold text-sm">Create your first savings goal</p>
+          <p className="text-xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary max-w-xs text-center">
+            Set a target amount and date. Finvault will calculate how much you need to save each month and track your pace.
           </p>
         </div>
-      </Card>
+      )}
+
+      {!loading && !error && goals.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {goals.map((goal, i) => (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              index={i}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <GoalModal onClose={() => setShowModal(false)} onCreated={handleCreated} />
+      )}
     </div>
   )
 }
