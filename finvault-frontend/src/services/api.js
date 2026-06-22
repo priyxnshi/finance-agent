@@ -100,3 +100,73 @@ export function deleteGoal(id) {
 }
 
 export default client
+
+// --- Machine Learning Phase 4 --------------------------------------------
+
+/**
+ * Requests a category prediction for a transaction string using local TF-IDF + Logistic Regression.
+ * @param {string} description - The merchant or transaction narrative string.
+ * @returns {Promise<{category: string}>}
+ */
+export function predictCategory(description) {
+  return client.post('/ml/predict-category', { description }).then((res) => res.data)
+}
+
+/**
+ * Generates a 30-day time-series cash burn projection runway using a local ARIMA profile.
+ * @param {number[]} historicalDailySpend - Numeric array containing historical daily cash spend values.
+ * @param {number} [forecastDays=30] - Number of future sequence indices to compute.
+ * @returns {Promise<{predicted_next_month_total: number, daily_forecast_trendline: number[], spending_trend_status: string}>}
+ */
+export function getSpendingForecast(historicalDailySpend, forecastDays = 30) {
+  return client.post('/ml/predict-spending', {
+    historical_daily_spend: historicalDailySpend,
+    forecast_days: forecastDays
+  }).then((res) => res.data)
+}
+
+/**
+ * Computes anomaly tracking vectors against past behaviors using an Isolation Forest.
+ * @param {Array<{id: number, description: string, amount: number, date: string}>} transactionsList - Core array log.
+ * @returns {Promise<{anomalies_found_count: number, anomalies: Array}>}
+ */
+export function getDetectedAnomalies(transactionsList) {
+  return client.post('/ml/detect-anomalies', { transactions: transactionsList }).then((res) => res.data)
+}
+
+/**
+ * Evaluates savings target success vectors with a local Monte Carlo simulation.
+ * @param {Object} payload 
+ * @param {number} payload.current_savings
+ * @param {number} payload.target_savings
+ * @param {number} payload.days_remaining
+ * @param {number[]} payload.historical_daily_spend
+ * @returns {Promise<{probability: number, status: string, projected_shortfall: number}>}
+ */
+export function predictGoalFeasibility(payload) {
+  return client.post('/ml/predict-goal-feasibility', {
+    current_savings: payload.current_savings,
+    target_savings: payload.target_savings,
+    days_remaining: payload.days_remaining,
+    historical_daily_spend: payload.historical_daily_spend
+  }).then((res) => res.data)
+}
+
+/**
+ * Dispatches historical categorical pairs off-thread to retrain active weights.
+ * @param {Array<{description: string, category: string}>} dataset 
+ * @returns {Promise<{status: string}>}
+ */
+export function triggerCategorizerRetraining(dataset) {
+  return client.post('/ml/retrain-categorizer', { dataset }).then((res) => res.data)
+}
+
+// --- AI Agent Core Loop Phase 5 ------------------------------------------
+
+export function processAgentLoop(payload) {
+  return client.post('/agent/process-loop', payload).then((res) => res.data)
+}
+
+export function sendAgentFeedback(payload) {
+  return client.post('/agent/feedback', payload).then((res) => res.data)
+}
