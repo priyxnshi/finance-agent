@@ -6,3 +6,7 @@ venv/
 finvault.db
 *.db
 .pytest_cache/
+-e 
+models/
+*.pkl
+*.joblib

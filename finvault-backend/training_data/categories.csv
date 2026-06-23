@@ -1,0 +1,257 @@
+description,category
+Blue Tokai Coffee,Food
+Starbucks,Food
+Third Wave Coffee,Food
+Chaayos,Food
+McDonald's,Food
+KFC,Food
+Domino's Pizza,Food
+Pizza Hut,Food
+Burger King,Food
+Haldiram's,Food
+Barbeque Nation,Food
+Zomato order,Food
+Swiggy delivery,Food
+Swiggy Instamart,Food
+BigBasket grocery,Food
+Dunzo grocery,Food
+DMart supermarket,Food
+More supermarket,Food
+Reliance Fresh,Food
+Nature's Basket,Food
+Zepto grocery,Food
+Blinkit delivery,Food
+Lunch at Saravana Bhavan,Food
+Breakfast at hotel,Food
+Office canteen,Food
+Restaurant bill,Food
+Food delivery,Food
+Cafe Coffee Day,Food
+Barista Lavazza,Food
+Subway sandwich,Food
+Taco Bell,Food
+Wendy's,Food
+Biryani by Kilo,Food
+Faasos wraps,Food
+Box8 meal,Food
+EatFit healthy,Food
+Mojo Pizza,Food
+La Pino'z,Food
+Rolls Mania,Food
+Chaat corner,Food
+Fresh vegetable market,Food
+Milk and dairy,Food
+Bakery items,Food
+Fruit shop,Food
+Cold coffee,Food
+Ice cream parlour,Food
+Juice bar,Food
+Pani puri,Food
+Chole bhature,Food
+Biryani order,Food
+Indigo Airlines ticket,Travel
+Air India booking,Travel
+SpiceJet flight,Travel
+IndiGo booking,Travel
+Vistara flight,Travel
+IRCTC train ticket,Travel
+Redbus bus ticket,Travel
+Abhibus booking,Travel
+Uber ride,Travel
+Ola cab,Travel
+Rapido bike,Travel
+Uber Eats — wait wrong,Travel
+Meru cab,Travel
+Auto rickshaw,Travel
+Metro card recharge,Travel
+BEST bus pass,Travel
+DMRC metro,Travel
+Namma Metro,Travel
+Chennai Metro,Travel
+Hyderabad Metro,Travel
+Petrol pump,Travel
+HP Petrol,Travel
+Indian Oil fuel,Travel
+BPCL petrol,Travel
+Shell petrol,Travel
+MakeMyTrip hotel,Travel
+Goibibo booking,Travel
+OYO rooms,Travel
+Treebo hotel,Travel
+FabHotels stay,Travel
+Airbnb booking,Travel
+Cleartrip flight,Travel
+EaseMyTrip,Travel
+Yatra booking,Travel
+Ixigo trains,Travel
+Taxi fare,Travel
+Airport cab,Travel
+Toll charges,Travel
+Parking fee,Travel
+EV charging,Travel
+Honda service,Travel
+Maruti service center,Travel
+Hyundai service,Travel
+Vehicle insurance,Travel
+Fastag recharge,Travel
+Mumbai local pass,Travel
+Jio recharge,Travel
+Airtel mobile bill,Travel
+Vodafone bill,Bills
+BSNL broadband,Bills
+Airtel Xstream fiber,Bills
+ACT Fibernet,Bills
+Hathway internet,Bills
+Jio Fiber,Bills
+MSEDCL electricity,Bills
+Tata Power bill,Bills
+BSES electricity,Bills
+BESCOM electricity,Bills
+TNEB electricity,Bills
+CESC power bill,Bills
+Water supply bill,Bills
+Gas pipeline bill,Bills
+Society maintenance,Bills
+Apartment maintenance,Bills
+Property tax,Bills
+House rent,Bills
+Home loan EMI,Bills
+Car loan EMI,Bills
+Personal loan EMI,Bills
+LIC premium,Bills
+HDFC Life insurance,Bills
+SBI insurance,Bills
+Max Life premium,Bills
+Health insurance,Bills
+Netflix subscription,Bills
+Amazon Prime,Bills
+Spotify premium,Bills
+Hotstar subscription,Bills
+SonyLIV,Bills
+ZEE5 subscription,Bills
+Tata Play DTH,Bills
+Dish TV,Bills
+Hathway cable,Bills
+YouTube Premium,Bills
+LinkedIn Premium,Bills
+Microsoft 365,Bills
+Google One,Bills
+iCloud storage,Bills
+Dropbox,Bills
+Norton antivirus,Bills
+Adobe Creative,Bills
+Gym membership,Bills
+Cult.fit subscription,Bills
+Cure.fit membership,Bills
+Hospital bill,Bills
+Doctor consultation,Bills
+Pharmacy — MedPlus,Bills
+Apollo Pharmacy,Bills
+Amazon shopping,Shopping
+Flipkart order,Shopping
+Myntra clothing,Shopping
+Ajio fashion,Shopping
+Nykaa beauty,Shopping
+Meesho order,Shopping
+Snapdeal,Shopping
+Tata CLiQ,Shopping
+Reliance Digital,Shopping
+Croma electronics,Shopping
+Vijay Sales,Shopping
+Imagine Apple store,Shopping
+Samsung store,Shopping
+Mi store,Shopping
+Boat headphones,Shopping
+OnePlus store,Shopping
+Apple iPhone,Shopping
+Laptop purchase,Shopping
+iPad order,Shopping
+Smart TV,Shopping
+H&M clothing,Shopping
+Zara fashion,Shopping
+Uniqlo,Shopping
+Fabindia,Shopping
+Westside clothes,Shopping
+Max Fashion,Shopping
+Pantaloons,Shopping
+Lifestyle stores,Shopping
+Central mall,Shopping
+Spencer's retail,Shopping
+Books purchase,Shopping
+Crossword bookstore,Shopping
+Stationery shop,Shopping
+Office supplies,Shopping
+Nike shoes,Shopping
+Adidas footwear,Shopping
+Puma shoes,Shopping
+Reebok sneakers,Shopping
+Woodland,Shopping
+Bata footwear,Shopping
+Campus shoes,Shopping
+Titan watch,Shopping
+Tanishq jewellery,Shopping
+Malabar Gold,Shopping
+Kalyan Jewellers,Shopping
+Home decor items,Shopping
+IKEA furniture,Shopping
+Pepperfry,Shopping
+Urban Ladder,Shopping
+Godrej furniture,Shopping
+Cosmetics shopping,Shopping
+Wildcraft bag,Shopping
+Skybags luggage,Shopping
+American Tourister,Shopping
+PVR cinema tickets,Entertainment
+INOX movies,Entertainment
+Cinepolis booking,Entertainment
+BookMyShow movie,Entertainment
+BookMyShow events,Entertainment
+Paytm movies,Entertainment
+Comedy show ticket,Entertainment
+Theatre performance,Entertainment
+Music concert ticket,Entertainment
+IPL match ticket,Entertainment
+Cricket stadium,Entertainment
+Football match,Entertainment
+Badminton court,Entertainment
+Swimming pool,Entertainment
+Gaming zone,Entertainment
+Smaaash entertainment,Entertainment
+Timezone gaming,Entertainment
+Steam games,Entertainment
+PlayStation store,Entertainment
+Xbox Game Pass,Entertainment
+Nintendo eShop,Entertainment
+Epic Games,Entertainment
+PUBG Mobile UC,Entertainment
+Free Fire diamonds,Entertainment
+Clash of Clans gems,Entertainment
+Amusement park,Entertainment
+Wonderla tickets,Entertainment
+Imagica theme park,Entertainment
+Aquatica waterpark,Entertainment
+Snow World,Entertainment
+Escape room booking,Entertainment
+Laser tag,Entertainment
+Go-kart racing,Entertainment
+Bowling alley,Entertainment
+Ludo Supreme,Entertainment
+Dream11 contests,Entertainment
+MPL gaming,Entertainment
+Winzo games,Entertainment
+Spotify concert,Entertainment
+Lollapalooza India,Entertainment
+NH7 Weekender,Entertainment
+Sunburn festival,Entertainment
+Comedy Club,Entertainment
+Open mic event,Entertainment
+Art exhibition,Entertainment
+Museum entry,Entertainment
+Science centre,Entertainment
+Planetarium show,Entertainment
+Zoo entry,Entertainment
+National park,Entertainment
+Escape room,Entertainment
+Karaoke bar,Entertainment
+Board game cafe,Entertainment
+VR gaming centre,Entertainment
