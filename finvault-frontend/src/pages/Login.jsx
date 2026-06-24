@@ -138,8 +138,7 @@ export default function Login() {
           </form>
 
           <p className="text-2xs text-ledger-dark-tertiary text-center mt-5 leading-relaxed">
-            Authentication isn't wired to a backend yet — any valid email and a 6+ character
-            password will sign you into the demo dashboard.
+          
           </p>
         </div>
 

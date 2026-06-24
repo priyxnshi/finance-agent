@@ -8,26 +8,7 @@ import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
 import MLStatusPanel from '../components/ui/MLStatusPanel.jsx'
 import { LoadingState, ErrorState } from '../components/ui/LoadingError.jsx'
-import { getMLStatus } from '../services/api.js'
-
-// Simulated FL clients — real Flower integration is Phase 6
-const FL_CLIENTS = [
-  { id: 'client-01', label: 'Device — Pixel 9',      status: 'Training',    accuracy: 0.912, lastRound: 14 },
-  { id: 'client-02', label: 'Device — MacBook Air',  status: 'Idle',        accuracy: 0.927, lastRound: 14 },
-  { id: 'client-03', label: 'Device — iPhone 16',    status: 'Aggregating', accuracy: 0.901, lastRound: 13 },
-  { id: 'client-04', label: 'Device — ThinkPad X1',  status: 'Training',    accuracy: 0.918, lastRound: 14 },
-  { id: 'client-05', label: 'Device — Galaxy Tab',   status: 'Offline',     accuracy: 0.889, lastRound: 11 },
-]
-
-const FL_ROUNDS = [
-  { round: 1, accuracy: 0.71 }, { round: 2, accuracy: 0.76 },
-  { round: 3, accuracy: 0.79 }, { round: 4, accuracy: 0.81 },
-  { round: 5, accuracy: 0.84 }, { round: 6, accuracy: 0.85 },
-  { round: 7, accuracy: 0.87 }, { round: 8, accuracy: 0.885 },
-  { round: 9, accuracy: 0.897 }, { round: 10, accuracy: 0.903 },
-  { round: 11, accuracy: 0.908 }, { round: 12, accuracy: 0.912 },
-  { round: 13, accuracy: 0.915 }, { round: 14, accuracy: 0.918 },
-]
+import { getMLStatus, getFederatedStatus } from '../services/api.js'
 
 const statusConfig = {
   Training:    { tone: 'blue',    icon: CircleDot    },
@@ -50,6 +31,7 @@ function RoundTooltip({ active, payload, label }) {
 
 export default function FederatedLearning() {
   const [mlStatus, setMLStatus] = useState(null)
+  const [flStatus, setFlStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -57,8 +39,18 @@ export default function FederatedLearning() {
     setLoading(true)
     setError('')
     try {
-      const data = await getMLStatus()
-      setMLStatus(data.models)
+      const [mlData, flData] = await Promise.all([
+        getMLStatus(),
+        getFederatedStatus().catch(() => ({
+          status: "Offline",
+          current_round: 0,
+          connected_clients: 0,
+          global_accuracy: 0.0,
+          history: []
+        }))
+      ])
+      setMLStatus(mlData.models)
+      setFlStatus(flData)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -72,13 +64,27 @@ export default function FederatedLearning() {
     ? Object.values(mlStatus).filter((m) => m.trained).length
     : 0
 
+  const connectedCount = flStatus?.connected_clients || 0
+  const clientsList = []
+  for (let i = 0; i < connectedCount; i++) {
+    clientsList.push({
+      id: `client-0${i + 1}`,
+      label: `Federated Node — Node 0${i + 1}`,
+      status: 'Aggregating',
+      accuracy: flStatus?.global_accuracy || 0.0,
+      lastRound: flStatus?.current_round || 0,
+    })
+  }
+
+  const flHistory = flStatus?.history || []
+
   return (
     <div className="space-y-6">
       {/* Intro */}
       <div className="flex items-center gap-2">
         <Network size={16} className="text-vault" />
         <p className="text-sm text-ledger-light-secondary dark:text-ledger-dark-secondary">
-          Phase 4 ML models are active locally. Phase 6 will wire Flower (flwr) for federated training across devices.
+          Phase 4 ML models are active locally. Federated learning status is updated live from the aggregation server.
         </p>
       </div>
 
@@ -88,12 +94,13 @@ export default function FederatedLearning() {
           delta={trainedCount === 5 ? 'All models ready' : 'Run train_models.py to complete'}
           deltaTone={trainedCount === 5 ? 'green' : 'amber'}
           icon={Brain} accent="vault" />
-        <MetricCard label="FL Global Round" value="14"
-          delta="Simulated · Phase 6 live"
+        <MetricCard label="FL Global Round" value={flStatus?.current_round != null ? `${flStatus.current_round}` : '0'}
+          delta={flStatus?.status || 'Offline'}
           deltaTone="neutral" icon={Network} accent="blue" />
-        <MetricCard label="Connected Clients" value="4 / 5"
-          delta="1 offline · simulated"
-          deltaTone="red" icon={Cpu} accent="red" />
+        <MetricCard label="Connected Clients" value={`${connectedCount}`}
+          delta={flStatus?.privacy_status || 'Secure (On-Device Local Context Only)'}
+          deltaTone={connectedCount > 0 ? 'green' : 'red'}
+          icon={Cpu} accent="red" />
       </div>
 
       {/* ML Model Status — live from API */}
@@ -103,73 +110,85 @@ export default function FederatedLearning() {
         <MLStatusPanel models={mlStatus} onRefresh={fetchStatus} />
       )}
 
-      {/* Simulated FL accuracy curve */}
+      {/* FL accuracy curve */}
       <Card accent="vault">
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-display font-semibold text-sm tracking-tight">Accuracy by FL Round</h3>
           <span className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-            FedAvg aggregation · simulated until Phase 6
+            FedAvg aggregation · live status
           </span>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <LineChart data={FL_ROUNDS} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="currentColor"
-              className="text-ink-950/5 dark:text-white/5" vertical={false} />
-            <XAxis dataKey="round" tick={{ fontSize: 11, fill: '#8B92A5' }} axisLine={false} tickLine={false} />
-            <YAxis
-              domain={[0.6, 1]}
-              tickFormatter={(v) => `${Math.round(v * 100)}%`}
-              tick={{ fontSize: 11, fill: '#8B92A5' }}
-              axisLine={false} tickLine={false} width={42}
-            />
-            <Tooltip content={<RoundTooltip />} />
-            <Line type="monotone" dataKey="accuracy" stroke="#4C8DFF" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        {flHistory.length > 0 ? (
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={flHistory} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="currentColor"
+                className="text-ink-950/5 dark:text-white/5" vertical={false} />
+              <XAxis dataKey="round" tick={{ fontSize: 11, fill: '#8B92A5' }} axisLine={false} tickLine={false} />
+              <YAxis
+                domain={[0.0, 1.0]}
+                tickFormatter={(v) => `${Math.round(v * 100)}%`}
+                tick={{ fontSize: 11, fill: '#8B92A5' }}
+                axisLine={false} tickLine={false} width={42}
+              />
+              <Tooltip content={<RoundTooltip />} />
+              <Line type="monotone" dataKey="accuracy" stroke="#4C8DFF" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="py-12 text-center text-xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+            No federated learning rounds completed yet (accuracy: 0.0%). Start the Flower aggregator and client network.
+          </div>
+        )}
       </Card>
 
-      {/* Simulated client nodes */}
+      {/* Client nodes */}
       <Card padded={false}>
         <div className="p-5 pb-3">
           <h3 className="font-display font-semibold text-sm tracking-tight">FL Client Nodes</h3>
           <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-0.5">
-            Simulated Flower clients — real multi-device training wires up in Phase 6.
+            Client nodes currently connected to the federated learning loop.
           </p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-y border-line-light dark:border-line text-2xs uppercase tracking-wider
-                text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-                <th className="text-left font-medium px-5 py-2.5">Client</th>
-                <th className="text-left font-medium px-5 py-2.5">Status</th>
-                <th className="text-left font-medium px-5 py-2.5">Local Accuracy</th>
-                <th className="text-right font-medium px-5 py-2.5">Last Round</th>
-              </tr>
-            </thead>
-            <tbody>
-              {FL_CLIENTS.map((c) => {
-                const cfg = statusConfig[c.status]
-                const Icon = cfg.icon
-                return (
-                  <tr key={c.id}
-                    className="border-b border-line-light dark:border-line last:border-0">
-                    <td className="px-5 py-3 font-medium">{c.label}</td>
-                    <td className="px-5 py-3">
-                      <Badge tone={cfg.tone}>
-                        <Icon size={11} /> {c.status}
-                      </Badge>
-                    </td>
-                    <td className="px-5 py-3 ledger-num">{(c.accuracy * 100).toFixed(1)}%</td>
-                    <td className="px-5 py-3 text-right ledger-num
-                      text-ledger-light-secondary dark:text-ledger-dark-secondary">
-                      #{c.lastRound}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          {clientsList.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-y border-line-light dark:border-line text-2xs uppercase tracking-wider
+                  text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+                  <th className="text-left font-medium px-5 py-2.5">Client</th>
+                  <th className="text-left font-medium px-5 py-2.5">Status</th>
+                  <th className="text-left font-medium px-5 py-2.5">Local Accuracy</th>
+                  <th className="text-right font-medium px-5 py-2.5">Last Round</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clientsList.map((c) => {
+                  const cfg = statusConfig[c.status]
+                  const Icon = cfg.icon
+                  return (
+                    <tr key={c.id}
+                      className="border-b border-line-light dark:border-line last:border-0">
+                      <td className="px-5 py-3 font-medium">{c.label}</td>
+                      <td className="px-5 py-3">
+                        <Badge tone={cfg.tone}>
+                          <Icon size={11} /> {c.status}
+                        </Badge>
+                      </td>
+                      <td className="px-5 py-3 ledger-num">{(c.accuracy * 100).toFixed(1)}%</td>
+                      <td className="px-5 py-3 text-right ledger-num
+                        text-ledger-light-secondary dark:text-ledger-dark-secondary">
+                        #{c.lastRound}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-8 text-center text-xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+              0 client nodes currently connected to the aggregator.
+            </div>
+          )}
         </div>
       </Card>
     </div>

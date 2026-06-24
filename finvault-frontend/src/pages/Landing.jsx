@@ -18,7 +18,7 @@ import Footer from '../components/landing/Footer.jsx'
  */
 export default function Landing() {
   return (
-    <div className="bg-ink-950 text-ledger-dark-primary min-h-screen">
+    <div className="bg-paper dark:bg-ink-950 text-ledger-light-primary dark:text-ledger-dark-primary min-h-screen transition-colors duration-150">
       <Navbar />
       <main>
         <Hero />

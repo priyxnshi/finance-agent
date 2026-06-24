@@ -1,4 +1,5 @@
 import React from 'react'
+import { ThemeProvider } from './context/ThemeContext.jsx'
 import Navbar from './components/Navbar.jsx'
 import Hero from './components/Hero.jsx'
 import Features from './components/Features.jsx'
@@ -11,18 +12,20 @@ import Footer from './components/Footer.jsx'
 
 export default function App() {
   return (
-    <div className="min-h-screen">
-      <Navbar />
-      <main>
-        <Hero />
-        <Features />
-        <HowItWorks />
-        <AIInsightsPreview />
-        <GoalPlanning />
-        <Privacy />
-        <FinalCTA />
-      </main>
-      <Footer />
-    </div>
+    <ThemeProvider>
+      <div className="bg-paper dark:bg-ink-950 text-ledger-light-primary dark:text-ledger-dark-primary min-h-screen transition-colors duration-150">
+        <Navbar />
+        <main>
+          <Hero />
+          <Features />
+          <HowItWorks />
+          <AIInsightsPreview />
+          <GoalPlanning />
+          <Privacy />
+          <FinalCTA />
+        </main>
+        <Footer />
+      </div>
+    </ThemeProvider>
   )
 }

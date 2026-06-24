@@ -15,6 +15,11 @@ export default {
         },
         line: {
           DEFAULT: '#2A3142',
+          light: '#E4E1D8',
+        },
+        paper: {
+          DEFAULT: '#F7F6F3',
+          raised: '#FFFFFF',
         },
         vault: {
           DEFAULT: '#C9A227',
@@ -28,9 +33,16 @@ export default {
           amber: '#E8A53D',
         },
         ledger: {
-          primary: '#EDEEF2',
-          secondary: '#8B92A5',
-          tertiary: '#5C6378',
+          dark: {
+            primary: '#EDEEF2',
+            secondary: '#8B92A5',
+            tertiary: '#5C6378',
+          },
+          light: {
+            primary: '#1A1F2B',
+            secondary: '#5C6373',
+            tertiary: '#8A8F9C',
+          },
         },
       },
       fontFamily: {

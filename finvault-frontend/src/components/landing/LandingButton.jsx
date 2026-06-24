@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 
 const variants = {
   primary: 'bg-vault text-ink-950 hover:bg-vault-light shadow-[0_8px_24px_-8px_rgba(201,162,39,0.5)]',
-  secondary: 'bg-white/[0.06] text-ledger-dark-primary border border-white/10 hover:bg-white/[0.1]',
-  ghost: 'text-ledger-dark-secondary hover:text-ledger-dark-primary',
+  secondary: 'bg-black/[0.04] dark:bg-white/[0.06] text-ledger-light-primary dark:text-ledger-dark-primary border border-line-light dark:border-white/10 hover:bg-black/[0.08] dark:hover:bg-white/[0.1]',
+  ghost: 'text-ledger-light-secondary dark:text-ledger-dark-secondary hover:text-ledger-light-primary dark:hover:text-ledger-dark-primary',
 }
 
 /**

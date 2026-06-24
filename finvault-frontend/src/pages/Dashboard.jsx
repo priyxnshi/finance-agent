@@ -21,14 +21,11 @@ import {
   predictSpending,
   getGoals,
   predictGoals,
+  getExpenses,
+  detectAnomalies,
+  executeAgentLoop,
 } from '../services/api.js'
 import { withCategoryColors } from '../utils/categoryColors.js'
-
-const aiInsights = [
-  { id: 1, tone: 'positive', title: 'ML models active', body: 'Categorizer, anomaly detector, spending forecast, and goal predictor are all running.' },
-  { id: 2, tone: 'warning', title: 'Review subscriptions', body: 'Recurring charges make up a growing share of monthly spend.' },
-  { id: 3, tone: 'neutral', title: 'See full analysis', body: 'Visit the Insights page for anomaly detection and detailed trend breakdowns.' },
-]
 
 const fmt = (n) => `\u20B9${Math.round(n).toLocaleString('en-IN')}`
 
@@ -42,6 +39,7 @@ export default function Dashboard() {
   const [forecast, setForecast] = useState(null)
   const [goals, setGoals] = useState([])
   const [goalPredictions, setGoalPredictions] = useState({})
+  const [insights, setInsights] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -63,6 +61,66 @@ export default function Dashboard() {
       setHeatmap(h)
       setHealthScore(hs)
       setMonthlySummary(ms)
+
+      // Calculate indicators and invoke the AI agent loop
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+      Promise.all([
+        getExpenses({ category: 'Income', start_date: startOfMonth, end_date: endOfMonth }).catch(() => []),
+        detectAnomalies(100).catch(() => ({ anomalies_found: 0 })),
+        predictGoals().catch(() => ({ predictions: [] }))
+      ]).then(([incomeRes, anomalyRes, goalPredRes]) => {
+        const monthlyIncome = incomeRes.reduce((acc, tr) => acc + (tr.amount || 0), 0)
+        const anomaliesCount = anomalyRes.anomalies_found || 0
+        const predictionsList = goalPredRes.predictions ?? []
+        const avgGoalProb = predictionsList.length > 0 
+          ? (predictionsList.reduce((acc, p) => acc + p.achievement_probability, 0) / predictionsList.length)
+          : 0.0
+
+        const categoryBudgets = {
+          'Food & Dining': 1000,
+          'Food': 1000,
+          'Shopping': 2000,
+          'Travel': 5000,
+          'Subscriptions': 500,
+          'Investment': 10000,
+          'Housing': 3000,
+          'Transport': 200,
+        }
+
+        const breakdownPayload = {}
+        const cats = c?.categories || []
+        cats.forEach((item) => {
+          breakdownPayload[item.category] = {
+            amount: item.total,
+            budget: categoryBudgets[item.category] || 99999
+          }
+        })
+
+        executeAgentLoop({
+          monthly_spend: s.monthly_spending || 0,
+          monthly_income: monthlyIncome,
+          goal_probability: avgGoalProb,
+          anomalies_count: anomaliesCount,
+          category_breakdown: breakdownPayload
+        }).then((agentRes) => {
+          const activeRecs = agentRes.active_recommendations ?? []
+          const mapped = activeRecs.map((rec) => ({
+            id: rec.id,
+            tone: rec.severity === 'critical' || rec.severity === 'warning' ? 'warning' : 'neutral',
+            title: rec.title,
+            body: rec.body
+          }))
+          setInsights(mapped)
+        }).catch(() => {
+          setInsights([])
+        })
+      }).catch(() => {
+        setInsights([])
+      })
+
     } catch (err) {
       setError(err.message)
       setLoading(false)
@@ -168,14 +226,14 @@ export default function Dashboard() {
         {monthlySummary && <MonthlySummaryCard data={monthlySummary} />}
         {forecast
           ? <SpendingForecastCard data={forecast} />
-          : <AIInsightsPanel insights={aiInsights} />
+          : <AIInsightsPanel insights={insights} />
         }
       </div>
 
       {/* Goal Outlook — shows goal progress + ML probability for each goal */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <GoalsSummaryCard goals={goals} predictions={goalPredictions} />
-        {forecast && <AIInsightsPanel insights={aiInsights} />}
+        {forecast && <AIInsightsPanel insights={insights} />}
       </div>
 
       {/* Heatmap */}

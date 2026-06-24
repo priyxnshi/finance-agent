@@ -22,30 +22,36 @@ export default function AIInsightsPanel({ insights, title = 'AI Insights' }) {
       </div>
 
       <div className="space-y-3">
-        {insights.map((insight) => {
-          const cfg = toneConfig[insight.tone]
-          const Icon = cfg.icon
-          return (
-            <div
-              key={insight.id}
-              className="flex gap-3 p-3 rounded-md border border-line-light dark:border-line bg-paper dark:bg-ink-850"
-            >
-              <div className={`h-7 w-7 rounded-md ${cfg.bg} grid place-items-center shrink-0`}>
-                <Icon size={14} className={cfg.color} />
+        {insights.length > 0 ? (
+          insights.map((insight) => {
+            const cfg = toneConfig[insight.tone] || toneConfig.neutral
+            const Icon = cfg.icon
+            return (
+              <div
+                key={insight.id}
+                className="flex gap-3 p-3 rounded-md border border-line-light dark:border-line bg-paper dark:bg-ink-850"
+              >
+                <div className={`h-7 w-7 rounded-md ${cfg.bg} grid place-items-center shrink-0`}>
+                  <Icon size={14} className={cfg.color} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium leading-snug">{insight.title}</p>
+                  <p className="text-xs text-ledger-light-secondary dark:text-ledger-dark-secondary leading-relaxed mt-0.5">
+                    {insight.body}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium leading-snug">{insight.title}</p>
-                <p className="text-xs text-ledger-light-secondary dark:text-ledger-dark-secondary leading-relaxed mt-0.5">
-                  {insight.body}
-                </p>
-              </div>
-            </div>
-          )
-        })}
+            )
+          })
+        ) : (
+          <div className="py-6 text-center text-xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+            0 active recommendations. All cash flows tracking normal.
+          </div>
+        )}
       </div>
 
       <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-4">
-        Generated from sample data. Insights will reflect your real transactions once the agent is connected in a later phase.
+        Insights generated live by Finvault AI Agent from your real-life transactions.
       </p>
     </Card>
   )

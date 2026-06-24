@@ -129,4 +129,18 @@ export function retrainModels(models = ['all']) {
   return client.post('/ml/retrain', { models }).then((res) => res.data)
 }
 
+// --- Agent & Federated Learning -----------------------------------------
+
+export function executeAgentLoop(payload) {
+  return client.post('/api/agent/process-loop', payload).then((res) => res.data)
+}
+
+export function recordAgentFeedback(payload) {
+  return client.post('/api/agent/feedback', payload).then((res) => res.data)
+}
+
+export function getFederatedStatus() {
+  return client.get('/api/federated/status').then((res) => res.data)
+}
+
 export default client

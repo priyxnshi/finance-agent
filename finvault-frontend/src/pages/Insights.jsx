@@ -15,14 +15,11 @@ import {
   getAnalyticsMonthlySummary,
   predictSpending,
   detectAnomalies,
+  getExpenses,
+  predictGoals,
+  executeAgentLoop,
 } from '../services/api.js'
 import { withCategoryColors } from '../utils/categoryColors.js'
-
-const aiInsights = [
-  { id: 1, tone: 'positive', title: 'ML categorizer active', body: 'All new transactions can be auto-categorized — try it from the Expenses page.' },
-  { id: 2, tone: 'warning', title: 'Anomaly detector watching', body: 'Isolation Forest is scanning every transaction against your baseline. Unusual spend appears in the feed below.' },
-  { id: 3, tone: 'neutral', title: 'Goal predictor running', body: 'Achievement probability is shown on every goal card. Go to Goals to see your forecast.' },
-]
 
 export default function Insights() {
   const [trends, setTrends] = useState(null)
@@ -30,6 +27,7 @@ export default function Insights() {
   const [monthlySummary, setMonthlySummary] = useState(null)
   const [forecast, setForecast] = useState(null)
   const [anomalies, setAnomalies] = useState(null)
+  const [insights, setInsights] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -45,6 +43,66 @@ export default function Insights() {
       setTrends(t)
       setCategories(withCategoryColors(c.categories))
       setMonthlySummary(ms)
+
+      // Invoke the AI agent loop to get dynamic recommendations
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+      Promise.all([
+        getExpenses({ category: 'Income', start_date: startOfMonth, end_date: endOfMonth }).catch(() => []),
+        detectAnomalies(100).catch(() => ({ anomalies_found: 0 })),
+        predictGoals().catch(() => ({ predictions: [] }))
+      ]).then(([incomeRes, anomalyRes, goalPredRes]) => {
+        const monthlyIncome = incomeRes.reduce((acc, tr) => acc + (tr.amount || 0), 0)
+        const anomaliesCount = anomalyRes.anomalies_found || 0
+        const predictionsList = goalPredRes.predictions ?? []
+        const avgGoalProb = predictionsList.length > 0 
+          ? (predictionsList.reduce((acc, p) => acc + p.achievement_probability, 0) / predictionsList.length)
+          : 0.0
+
+        const categoryBudgets = {
+          'Food & Dining': 1000,
+          'Food': 1000,
+          'Shopping': 2000,
+          'Travel': 5000,
+          'Subscriptions': 500,
+          'Investment': 10000,
+          'Housing': 3000,
+          'Transport': 200,
+        }
+
+        const breakdownPayload = {}
+        const cats = c?.categories || []
+        cats.forEach((item) => {
+          breakdownPayload[item.category] = {
+            amount: item.total,
+            budget: categoryBudgets[item.category] || 99999
+          }
+        })
+
+        executeAgentLoop({
+          monthly_spend: ms?.total_spent || 0,
+          monthly_income: monthlyIncome,
+          goal_probability: avgGoalProb,
+          anomalies_count: anomaliesCount,
+          category_breakdown: breakdownPayload
+        }).then((agentRes) => {
+          const activeRecs = agentRes.active_recommendations ?? []
+          const mapped = activeRecs.map((rec) => ({
+            id: rec.id,
+            tone: rec.severity === 'critical' || rec.severity === 'warning' ? 'warning' : 'neutral',
+            title: rec.title,
+            body: rec.body
+          }))
+          setInsights(mapped)
+        }).catch(() => {
+          setInsights([])
+        })
+      }).catch(() => {
+        setInsights([])
+      })
+
     } catch (err) {
       setError(err.message)
       setLoading(false)
@@ -92,7 +150,7 @@ export default function Insights() {
             : <p className="text-xs text-center text-ledger-light-tertiary dark:text-ledger-dark-tertiary py-10">No monthly data yet.</p>
           }
         </Card>
-        <AIInsightsPanel insights={aiInsights} title="ML Status Notes" />
+        <AIInsightsPanel insights={insights} title="ML Status Notes" />
       </div>
 
       {/* Forecast + Monthly summary */}
