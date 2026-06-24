@@ -8,6 +8,7 @@ import GoalPlanning from '../components/landing/GoalPlanning.jsx'
 import Privacy from '../components/landing/Privacy.jsx'
 import FinalCTA from '../components/landing/FinalCTA.jsx'
 import Footer from '../components/landing/Footer.jsx'
+import CustomCursor from '../components/landing/CustomCursor.jsx'
 
 /**
  * Public marketing page, mounted at "/". Deliberately always-dark — see
@@ -18,7 +19,8 @@ import Footer from '../components/landing/Footer.jsx'
  */
 export default function Landing() {
   return (
-    <div className="bg-paper dark:bg-ink-950 text-ledger-light-primary dark:text-ledger-dark-primary min-h-screen transition-colors duration-150">
+    <div className="bg-paper dark:bg-ink-950 text-ledger-light-primary dark:text-ledger-dark-primary min-h-screen transition-colors duration-150 custom-cursor-active">
+      <CustomCursor />
       <Navbar />
       <main>
         <Hero />

@@ -79,3 +79,11 @@ button:focus-visible {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Custom Cursor support */
+@media (min-width: 768px) {
+  .custom-cursor-active,
+  .custom-cursor-active * {
+    cursor: none !important;
+  }
+}
