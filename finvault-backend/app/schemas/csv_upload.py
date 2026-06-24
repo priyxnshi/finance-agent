@@ -22,5 +22,6 @@ class CSVUploadResult(BaseModel):
     total_rows: int
     imported_count: int
     failed_count: int
+    auto_categorized: int = 0   # rows where ML filled in a blank category
     imported_expenses: list[ExpenseOut]
     errors: list[CSVRowError]

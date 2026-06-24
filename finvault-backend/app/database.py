@@ -43,6 +43,6 @@ def init_db() -> None:
     """Create all tables that don't exist yet. Called once on app startup."""
     # Import models here (not at module top-level) so they're registered on
     # Base.metadata before create_all runs, without causing circular imports.
-    from app.models import expense, goal, recommendation, user_behavior  # noqa: F401
+    from app.models import expense, goal, recommendation, user_behavior, agent  # noqa: F401
 
     Base.metadata.create_all(bind=engine)

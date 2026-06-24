@@ -1,21 +1,166 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, SlidersHorizontal, Download, ArrowUpRight, ArrowDownRight, Upload, X } from 'lucide-react'
+import { Search, Upload, X, Plus, Loader2 } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
 import CategoryBarChart from '../components/ui/CategoryBarChart.jsx'
+import CategorySuggestion from '../components/ui/CategorySuggestion.jsx'
 import { LoadingState, ErrorState } from '../components/ui/LoadingError.jsx'
-import { getExpenses, getAnalyticsSummary, getAnalyticsCategories, uploadCSV } from '../services/api.js'
+import {
+  getExpenses,
+  getAnalyticsSummary,
+  getAnalyticsCategories,
+  uploadCSV,
+  createExpense,
+} from '../services/api.js'
 import { withCategoryColors } from '../utils/categoryColors.js'
 
 const categoryTone = {
-  Housing: 'blue', 'Food & Dining': 'green', Transport: 'vault',
-  Subscriptions: 'amber', Shopping: 'red', Travel: 'blue',
-  Investment: 'vault', Income: 'green', Other: 'neutral',
+  Food: 'green', Travel: 'vault', Bills: 'blue',
+  Shopping: 'amber', Entertainment: 'red',
+  Housing: 'blue', Transport: 'vault',
+  Subscriptions: 'amber', Income: 'green', Other: 'neutral',
 }
-const statusTone = { Cleared: 'green', Pending: 'amber' }
 
-function fmt(n) { return `\u20B9${Math.abs(Math.round(n)).toLocaleString('en-IN')}` }
+const fmt = (n) => `\u20B9${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
+
+function AddExpenseForm({ onCreated, onCancel }) {
+  const [description, setDescription] = useState('')
+  const [amount, setAmount] = useState('')
+  const [category, setCategory] = useState('')
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [submitting, setSubmitting] = useState(false)
+  const [errors, setErrors] = useState({})
+
+  function validate() {
+    const e = {}
+    if (!description.trim()) e.description = 'Required'
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) e.amount = 'Enter a positive amount'
+    if (!category.trim()) e.category = 'Required — or click the AI suggestion'
+    if (!date) e.date = 'Required'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!validate() || submitting) return
+    setSubmitting(true)
+    try {
+      const created = await createExpense({
+        description: description.trim(),
+        amount: parseFloat(amount),
+        category: category.trim(),
+        date,
+      })
+      onCreated(created)
+    } catch (err) {
+      setErrors({ server: err.message })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} noValidate className="rounded-card border border-vault/30 bg-vault/[0.03] dark:bg-vault/[0.05] p-4 space-y-3">
+      <p className="text-sm font-semibold text-vault">Add Expense</p>
+
+      {errors.server && (
+        <p className="text-xs text-signal-red">{errors.server}</p>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Description + AI suggestion */}
+        <div className="sm:col-span-2">
+          <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
+            Description
+          </label>
+          <input
+            type="text"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="e.g. Swiggy dinner"
+            className={fieldCls(errors.description)}
+          />
+          {/* AI category suggestion fires as user types */}
+          <CategorySuggestion
+            description={description}
+            onAccept={(cat) => setCategory(cat)}
+          />
+          {errors.description && <p className="text-2xs text-signal-red mt-1">{errors.description}</p>}
+        </div>
+
+        <div>
+          <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
+            Amount (₹)
+          </label>
+          <input
+            type="number" min="0.01" step="any"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="e.g. 480"
+            className={fieldCls(errors.amount)}
+          />
+          {errors.amount && <p className="text-2xs text-signal-red mt-1">{errors.amount}</p>}
+        </div>
+
+        <div>
+          <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
+            Category
+          </label>
+          <input
+            type="text"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            placeholder="Food, Travel, Bills…"
+            className={fieldCls(errors.category)}
+          />
+          {errors.category && <p className="text-2xs text-signal-red mt-1">{errors.category}</p>}
+        </div>
+
+        <div>
+          <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
+            Date
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className={fieldCls(errors.date)}
+          />
+          {errors.date && <p className="text-2xs text-signal-red mt-1">{errors.date}</p>}
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <button
+          type="submit"
+          disabled={submitting}
+          className="inline-flex items-center gap-1.5 rounded-md bg-vault text-ink-950 px-4 py-2
+            text-sm font-semibold hover:bg-vault-light transition disabled:opacity-60"
+        >
+          {submitting ? <><Loader2 size={13} className="animate-spin" /> Adding…</> : 'Add Expense'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-md border border-line-light dark:border-line px-4 py-2 text-sm
+            text-ledger-light-secondary dark:text-ledger-dark-secondary hover:bg-ink-950/[0.04] dark:hover:bg-white/[0.04] transition"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function fieldCls(error) {
+  return `w-full h-10 px-3 rounded-md text-sm border ${
+    error ? 'border-signal-red/60' : 'border-line-light dark:border-line'
+  } bg-paper dark:bg-ink-850 text-ledger-light-primary dark:text-ledger-dark-primary
+  placeholder:text-ledger-light-tertiary dark:placeholder:text-ledger-dark-tertiary
+  focus:outline-none focus:ring-2 focus:ring-signal-blue/40 focus:border-signal-blue/60 transition`
+}
 
 export default function Expenses() {
   const [expenses, setExpenses] = useState([])
@@ -26,6 +171,7 @@ export default function Expenses() {
   const [query, setQuery] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadResult, setUploadResult] = useState(null)
+  const [showAddForm, setShowAddForm] = useState(false)
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
@@ -48,6 +194,13 @@ export default function Expenses() {
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
+  function handleCreated(expense) {
+    setExpenses((prev) => [expense, ...prev])
+    setShowAddForm(false)
+    // Refresh summary totals in background
+    getAnalyticsSummary().then(setSummary).catch(() => {})
+  }
+
   async function handleFileUpload(e) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -66,7 +219,7 @@ export default function Expenses() {
   }
 
   const filtered = expenses.filter((t) =>
-    t.description?.toLowerCase().includes(query.toLowerCase()) ||
+    (t.description?.toLowerCase() ?? '').includes(query.toLowerCase()) ||
     t.category.toLowerCase().includes(query.toLowerCase())
   )
 
@@ -84,7 +237,8 @@ export default function Expenses() {
             <MetricCard label="This Month" value={summary ? fmt(summary.monthly_spending) : '—'}
               delta="Month-to-date" deltaTone="neutral" accent="vault" />
             <MetricCard label="Top Category" value={summary?.top_category ?? '—'}
-              delta={summary?.top_category ? fmt(summary.top_category_amount) : 'No data'} deltaTone="neutral" accent="blue" />
+              delta={summary?.top_category ? fmt(summary.top_category_amount) : 'No data'}
+              deltaTone="neutral" accent="blue" />
           </div>
 
           {/* Category bar chart */}
@@ -95,7 +249,15 @@ export default function Expenses() {
             </Card>
           )}
 
-          {/* CSV upload result */}
+          {/* Add form */}
+          {showAddForm && (
+            <AddExpenseForm
+              onCreated={handleCreated}
+              onCancel={() => setShowAddForm(false)}
+            />
+          )}
+
+          {/* Upload result banner */}
           {uploadResult && (
             <div className={`rounded-card border px-4 py-3 text-sm flex items-start justify-between gap-4 ${
               uploadResult.error
@@ -105,7 +267,11 @@ export default function Expenses() {
               <span>
                 {uploadResult.error
                   ? `Upload failed: ${uploadResult.error}`
-                  : `Imported ${uploadResult.imported_count} rows${uploadResult.failed_count > 0 ? `, ${uploadResult.failed_count} skipped` : ''}.`
+                  : `Imported ${uploadResult.imported_count} rows${
+                      uploadResult.auto_categorized > 0
+                        ? ` · ${uploadResult.auto_categorized} auto-categorized by AI`
+                        : ''
+                    }${uploadResult.failed_count > 0 ? ` · ${uploadResult.failed_count} skipped` : ''}.`
                 }
               </span>
               <button onClick={() => setUploadResult(null)}><X size={14} /></button>
@@ -118,7 +284,7 @@ export default function Expenses() {
               <div>
                 <h3 className="font-display font-semibold text-sm tracking-tight">Transactions</h3>
                 <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-0.5">
-                  Live from your local database
+                  AI auto-categorizes new entries as you type
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -128,16 +294,27 @@ export default function Expenses() {
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search"
-                    className="h-9 pl-8 pr-3 rounded-md text-sm bg-paper dark:bg-ink-850 border border-line-light dark:border-line w-36
-                      focus:outline-none focus:ring-2 focus:ring-signal-blue/40 focus:border-signal-blue/60 transition"
+                    className="h-9 pl-8 pr-3 rounded-md text-sm bg-paper dark:bg-ink-850 border
+                      border-line-light dark:border-line w-36 focus:outline-none
+                      focus:ring-2 focus:ring-signal-blue/40 focus:border-signal-blue/60 transition"
                   />
                 </div>
-                <label className={`h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-sm font-medium cursor-pointer
-                  border border-line-light dark:border-line bg-transparent
-                  text-ledger-light-primary dark:text-ledger-dark-primary hover:bg-ink-950/[0.04] dark:hover:bg-white/[0.05] transition
+                <button
+                  onClick={() => setShowAddForm((v) => !v)}
+                  className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-sm font-medium
+                    bg-ink-950 dark:bg-vault text-paper-raised dark:text-ink-950
+                    hover:opacity-90 transition"
+                >
+                  <Plus size={14} /> Add
+                </button>
+                <label className={`h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-sm font-medium
+                  cursor-pointer border border-line-light dark:border-line
+                  text-ledger-light-primary dark:text-ledger-dark-primary
+                  hover:bg-ink-950/[0.04] dark:hover:bg-white/[0.05] transition
                   ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
-                  <Upload size={14} /> {uploading ? 'Uploading…' : 'Import CSV'}
-                  <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                  <Upload size={14} /> {uploading ? 'Uploading…' : 'CSV'}
+                  <input type="file" accept=".csv" className="hidden"
+                    onChange={handleFileUpload} disabled={uploading} />
                 </label>
               </div>
             </div>
@@ -145,7 +322,8 @@ export default function Expenses() {
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-y border-line-light dark:border-line text-2xs uppercase tracking-wider text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+                  <tr className="border-y border-line-light dark:border-line text-2xs uppercase tracking-wider
+                    text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
                     <th className="text-left font-medium px-5 py-2.5">Description</th>
                     <th className="text-left font-medium px-5 py-2.5">Category</th>
                     <th className="text-left font-medium px-5 py-2.5">Date</th>
@@ -154,17 +332,12 @@ export default function Expenses() {
                 </thead>
                 <tbody>
                   {filtered.map((t) => (
-                    <tr key={t.id} className="border-b border-line-light dark:border-line last:border-0 hover:bg-ink-950/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                    <tr key={t.id}
+                      className="border-b border-line-light dark:border-line last:border-0
+                        hover:bg-ink-950/[0.02] dark:hover:bg-white/[0.02] transition-colors">
                       <td className="px-5 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="h-7 w-7 rounded-md bg-ink-950/[0.04] dark:bg-white/[0.06] grid place-items-center shrink-0">
-                            <ArrowDownRight size={13} className="text-signal-red" />
-                          </div>
-                          <div>
-                            <p className="font-medium truncate max-w-[160px]">{t.description || '—'}</p>
-                            <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">ID {t.id}</p>
-                          </div>
-                        </div>
+                        <p className="font-medium truncate max-w-[200px]">{t.description || '—'}</p>
+                        <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">ID {t.id}</p>
                       </td>
                       <td className="px-5 py-3">
                         <Badge tone={categoryTone[t.category] ?? 'neutral'}>{t.category}</Badge>
@@ -177,14 +350,18 @@ export default function Expenses() {
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-5 py-10 text-center text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-                        {expenses.length === 0 ? 'No expenses yet — add one or import a CSV.' : `No results for "${query}".`}
+                      <td colSpan={4} className="px-5 py-10 text-center
+                        text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+                        {expenses.length === 0
+                          ? 'No expenses yet — add one or import a CSV.'
+                          : `No results for "${query}".`}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+
             <div className="px-5 py-4 text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
               Showing {filtered.length} of {expenses.length} transactions
             </div>

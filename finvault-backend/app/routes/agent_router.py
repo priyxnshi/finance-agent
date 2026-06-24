@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+import os
+import json
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import Dict
+
+from app.database import get_db
 from app.services.agent_service import FinVaultAIAgent
 
 router = APIRouter(prefix="/api/agent", tags=["AI Agent Engine"])
+federated_router = APIRouter(prefix="/api/federated", tags=["Federated Learning"])
 
-# Mock DB Engine Depend session handler for localhost setup
-def get_db():
-    # Placeholder mapping to your local configuration setup
-    pass
+STATE_FILE = os.path.join(os.path.dirname(__file__), "../federated/fl_state.json")
 
 class AgentExecutionRequest(BaseModel):
     monthly_spend: float
@@ -54,14 +56,7 @@ async def record_user_feedback(payload: UserFeedbackRequest, db: Session = Depen
     )
     return {"status": "Telemetry processed. Local adaptation matrix calibrated."}
 
-import os
-import json
-from fastapi import APIRouter
-
-router = APIRouter()
-STATE_FILE = os.path.join(os.path.dirname(__file__), "../federated/fl_state.json")
-
-@router.get("/api/federated/status")
+@federated_router.get("/status")
 async def get_federated_metrics():
     """Reads state summaries produced by the underlying Flower orchestration process."""
     if not os.path.exists(STATE_FILE):

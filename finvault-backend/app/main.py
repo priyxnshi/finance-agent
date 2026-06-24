@@ -16,7 +16,7 @@ from starlette.requests import Request
 
 from app.config import settings
 from app.database import init_db
-from app.routes import analytics, expenses, goals, ml, upload
+from app.routes import analytics, expenses, goals, ml, upload, agent_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -70,6 +70,8 @@ app.include_router(upload.router)
 app.include_router(analytics.router)
 app.include_router(goals.router)
 app.include_router(ml.router)
+app.include_router(agent_router.router)
+app.include_router(agent_router.federated_router)
 
 
 @app.get("/", tags=["Health"])

@@ -6,11 +6,16 @@ and in any order:
 
     amount,category,date,description
     480,Food & Dining,2026-06-19,Blue Tokai Coffee
-    2340,Shopping,2026-06-17,Amazon
+    2340,,2026-06-17,Amazon           ← blank category: ML auto-fills it
+    8900,Travel,2026-06-16,           ← blank description: category used as-is
+
+`category` is now optional. When blank (or the column is omitted entirely),
+the ML categorizer predicts it from `description`. If the categorizer model
+hasn't been trained yet, the row still imports with category "Uncategorized"
+instead of failing — so bulk imports never block on a missing model.
 
 `description` is optional and may be blank. `date` accepts a few common
-formats (see DATE_FORMATS below); anything else is reported as a row error
-rather than failing the whole upload.
+formats (see DATE_FORMATS below).
 """
 import csv
 import io
@@ -23,10 +28,13 @@ from app.schemas.expense import ExpenseCreate
 from app.schemas.csv_upload import CSVRowError, CSVUploadResult
 from app.services import expense_service
 
-REQUIRED_COLUMNS = {"amount", "category", "date"}
-OPTIONAL_COLUMNS = {"description"}
+# category is no longer required — ML fills it when blank
+REQUIRED_COLUMNS = {"amount", "date"}
+OPTIONAL_COLUMNS = {"category", "description"}
 
 DATE_FORMATS = ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%m/%d/%Y")
+
+FALLBACK_CATEGORY = "Uncategorized"
 
 
 class CSVFormatError(ValueError):
@@ -53,6 +61,23 @@ def _parse_amount(raw: str) -> float:
     return float(raw)
 
 
+def _predict_category(description: str) -> tuple[str, bool]:
+    """
+    Try to predict a category using the ML categorizer.
+    Returns (category, was_predicted).
+    Falls back to FALLBACK_CATEGORY gracefully if the model isn't trained.
+    """
+    if not description or not description.strip():
+        return FALLBACK_CATEGORY, False
+    try:
+        from app.ml.categorizer import predict
+        result = predict(description.strip())
+        return result["predicted_category"], True
+    except Exception:
+        # Model not trained, import error, or any other issue — never block the upload
+        return FALLBACK_CATEGORY, False
+
+
 def parse_and_import_csv(db: Session, file_bytes: bytes) -> CSVUploadResult:
     try:
         text = file_bytes.decode("utf-8-sig")  # handles Excel's UTF-8 BOM gracefully
@@ -69,18 +94,17 @@ def parse_and_import_csv(db: Session, file_bytes: bytes) -> CSVUploadResult:
     if missing:
         raise CSVFormatError(
             f"missing required column(s): {', '.join(sorted(missing))}. "
-            f"Expected headers: amount, category, date, description (optional)."
+            f"Expected headers: amount, date, description (optional), category (optional — ML fills when blank)."
         )
 
     imported = []
     errors: list[CSVRowError] = []
     total_rows = 0
+    auto_categorized = 0
 
     for row_number, raw_row in enumerate(reader, start=1):
         total_rows += 1
 
-        # Re-key the row using the normalized (lowercase) column names so
-        # "Amount", "AMOUNT", "amount" all work the same way.
         row = {
             key: (raw_row.get(original) or "").strip()
             for key, original in normalized_fields.items()
@@ -88,11 +112,19 @@ def parse_and_import_csv(db: Session, file_bytes: bytes) -> CSVUploadResult:
 
         try:
             amount = _parse_amount(row["amount"])
-            category = row["category"].strip()
-            if not category:
-                raise ValueError("category is required")
             parsed_date = _parse_date(row["date"])
             description = row.get("description") or None
+
+            # --- Category resolution: CSV value → ML prediction → fallback ---
+            raw_category = row.get("category", "").strip()
+            if raw_category:
+                category = raw_category
+                predicted = False
+            else:
+                # Blank or missing category column — ask the ML model
+                category, predicted = _predict_category(description or "")
+                if predicted:
+                    auto_categorized += 1
 
             payload = ExpenseCreate(
                 amount=amount,
@@ -109,7 +141,7 @@ def parse_and_import_csv(db: Session, file_bytes: bytes) -> CSVUploadResult:
         try:
             expense = expense_service.create_expense(db, payload)
             imported.append(expense)
-        except Exception as exc:  # database-level failure on an otherwise valid row
+        except Exception as exc:
             db.rollback()
             errors.append(
                 CSVRowError(
@@ -125,4 +157,6 @@ def parse_and_import_csv(db: Session, file_bytes: bytes) -> CSVUploadResult:
         failed_count=len(errors),
         imported_expenses=imported,
         errors=errors,
+        auto_categorized=auto_categorized,
     )
+
