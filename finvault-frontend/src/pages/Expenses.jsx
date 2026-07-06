@@ -294,13 +294,14 @@ function AddExpenseForm({ onCreated, onCancel }) {
               <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
                 Category
               </label>
-              <input
-                type="text"
+              <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                placeholder="Food, Travel, Bills…"
                 className={fieldCls(errors.category)}
-              />
+              >
+                <option value="">Select a category...</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
               {errors.category && <p className="text-2xs text-signal-red mt-1">{errors.category}</p>}
             </div>
 
