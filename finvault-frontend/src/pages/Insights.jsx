@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { Sparkles, X } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import AIInsightsPanel from '../components/ui/AIInsightsPanel.jsx'
 import MonthlyTrendChart from '../components/ui/MonthlyTrendChart.jsx'
@@ -21,6 +21,17 @@ import {
 } from '../services/api.js'
 import { withCategoryColors } from '../utils/categoryColors.js'
 
+const DEFAULT_BUDGETS = {
+  'Food & Dining': 1000,
+  'Food': 1000,
+  'Shopping': 2000,
+  'Travel': 5000,
+  'Subscriptions': 500,
+  'Investment': 10000,
+  'Housing': 3000,
+  'Transport': 200,
+}
+
 export default function Insights() {
   const [trends, setTrends] = useState(null)
   const [categories, setCategories] = useState([])
@@ -30,6 +41,24 @@ export default function Insights() {
   const [insights, setInsights] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const [budgets, setBudgets] = useState(() => {
+    const saved = localStorage.getItem('finvault_budgets')
+    return saved ? JSON.parse(saved) : DEFAULT_BUDGETS
+  })
+  const [showBudgetModal, setShowBudgetModal] = useState(false)
+  const [budgetForm, setBudgetForm] = useState({})
+
+  useEffect(() => {
+    setBudgetForm(budgets)
+  }, [budgets])
+
+  function handleSaveBudgets() {
+    setBudgets(budgetForm)
+    localStorage.setItem('finvault_budgets', JSON.stringify(budgetForm))
+    setShowBudgetModal(false)
+    fetchAll()
+  }
 
   async function fetchAll() {
     setLoading(true)
@@ -61,16 +90,8 @@ export default function Insights() {
           ? (predictionsList.reduce((acc, p) => acc + p.achievement_probability, 0) / predictionsList.length)
           : 0.0
 
-        const categoryBudgets = {
-          'Food & Dining': 1000,
-          'Food': 1000,
-          'Shopping': 2000,
-          'Travel': 5000,
-          'Subscriptions': 500,
-          'Investment': 10000,
-          'Housing': 3000,
-          'Transport': 200,
-        }
+        const savedBudgets = localStorage.getItem('finvault_budgets')
+        const categoryBudgets = savedBudgets ? JSON.parse(savedBudgets) : DEFAULT_BUDGETS
 
         const breakdownPayload = {}
         const cats = c?.categories || []
@@ -130,9 +151,17 @@ export default function Insights() {
     <div className="space-y-6">
       {/* Summary banner */}
       <Card accent="vault" className="bg-gradient-to-br from-vault/[0.06] to-transparent">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles size={16} className="text-vault" />
-          <h2 className="font-display font-semibold tracking-tight">Agent Summary</h2>
+        <div className="flex items-between justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-vault" />
+            <h2 className="font-display font-semibold tracking-tight">Agent Summary</h2>
+          </div>
+          <button
+            onClick={() => setShowBudgetModal(true)}
+            className="text-2xs font-semibold px-2.5 py-1 rounded border border-vault/30 bg-vault/5 text-vault hover:bg-vault/10 transition"
+          >
+            Configure Budgets
+          </button>
         </div>
         <p className="text-sm text-ledger-light-secondary dark:text-ledger-dark-secondary leading-relaxed max-w-2xl">
           Spending is {growth != null ? (growth <= 0 ? 'down' : 'up') : 'being tracked'} this period.{' '}
@@ -195,6 +224,55 @@ export default function Insights() {
           <CategoryBarChart data={categories} />
         </Card>
       </div>
+
+      {/* Configure Budgets Modal */}
+      {showBudgetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-paper dark:bg-ink-900 border border-line-light dark:border-white/10 rounded-card shadow-xl max-w-md w-full overflow-hidden">
+            <div className="p-5 border-b border-line-light dark:border-white/10 flex justify-between items-center">
+              <h3 className="font-display font-semibold text-sm tracking-tight text-ledger-light-primary dark:text-ledger-dark-primary">
+                Configure Monthly Budgets (₹)
+              </h3>
+              <button
+                onClick={() => setShowBudgetModal(false)}
+                className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary hover:text-ledger-light-primary dark:hover:text-ledger-dark-primary transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-5 max-h-[60vh] overflow-y-auto space-y-3">
+              {Object.keys(DEFAULT_BUDGETS).map((cat) => (
+                <div key={cat} className="flex items-center justify-between gap-4">
+                  <label className="text-xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary">
+                    {cat}
+                  </label>
+                  <input
+                    type="number"
+                    value={budgetForm[cat] ?? ''}
+                    onChange={(e) => setBudgetForm({ ...budgetForm, [cat]: parseFloat(e.target.value) || 0 })}
+                    placeholder="e.g. 1000"
+                    className="h-8 px-2 w-32 rounded border border-line-light dark:border-line bg-paper-raised dark:bg-ink-850 text-xs text-right text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="p-5 bg-ink-950/[0.02] dark:bg-white/[0.02] border-t border-line-light dark:border-white/10 flex justify-end gap-2">
+              <button
+                onClick={() => setShowBudgetModal(false)}
+                className="h-9 px-3 rounded-md text-xs font-medium border border-line-light dark:border-line text-ledger-light-secondary dark:text-ledger-dark-secondary hover:bg-ink-950/[0.02] dark:hover:bg-white/[0.02] transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveBudgets}
+                className="h-9 px-3 rounded-md text-xs font-medium bg-vault text-ink-950 hover:opacity-90 transition"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
