@@ -171,7 +171,7 @@ def detect(expenses: list[dict]) -> list[dict]:
 
     results = []
     for expense, pred, score in zip(expenses, preds, scores):
-        is_anomaly = pred == -1
+        is_anomaly = bool(pred == -1)
         # Normalise score to 0-1 (1 = most anomalous) for the UI
         normalised = float(np.clip(1 - (score - scores.min()) / (scores.ptp() + 1e-9), 0, 1))
         reason = ""

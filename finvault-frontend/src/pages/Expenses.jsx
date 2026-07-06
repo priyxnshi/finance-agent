@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2, Trash2 } from 'lucide-react'
+import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2, Trash2, Download } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
@@ -730,6 +730,27 @@ export default function Expenses() {
     }
   }
 
+  function handleExportCSV() {
+    if (expenses.length === 0) return
+    const headers = ["ID", "Description", "Category", "Date", "Amount"]
+    const rows = expenses.map(e => [
+      e.id,
+      `"${(e.description || '').replace(/"/g, '""')}"`,
+      `"${e.category}"`,
+      e.date,
+      e.amount
+    ])
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + [headers.join(","), ...rows.map(r => r.join(","))].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", `finvault_expenses_export_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
   const filtered = expenses.filter((t) =>
     (t.description?.toLowerCase() ?? '').includes(query.toLowerCase()) ||
     t.category.toLowerCase().includes(query.toLowerCase())
@@ -828,6 +849,16 @@ export default function Expenses() {
                   <input type="file" accept=".csv" className="hidden"
                     onChange={handleFileUpload} disabled={uploading} />
                 </label>
+                <button
+                  onClick={handleExportCSV}
+                  className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-sm font-medium
+                    border border-line-light dark:border-line
+                    text-ledger-light-primary dark:text-ledger-dark-primary
+                    hover:bg-ink-950/[0.04] dark:hover:bg-white/[0.05] transition"
+                  title="Export expenses to CSV"
+                >
+                  <Download size={14} /> Export
+                </button>
               </div>
             </div>
 
