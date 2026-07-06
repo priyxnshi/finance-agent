@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle } from 'lucide-react'
+import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2 } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
@@ -13,6 +13,7 @@ import {
   uploadCSV,
   createExpense,
   parseNaturalLanguageExpense,
+  updateExpense,
 } from '../services/api.js'
 import { withCategoryColors } from '../utils/categoryColors.js'
 
@@ -682,6 +683,39 @@ export default function Expenses() {
     }
   }
 
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ description: '', amount: '', category: '', date: '' })
+
+  const CATEGORIES = ["Food", "Travel", "Bills", "Shopping", "Entertainment"]
+
+  function startEdit(expense) {
+    setEditingId(expense.id)
+    setEditForm({
+      description: expense.description || '',
+      amount: expense.amount,
+      category: expense.category,
+      date: expense.date,
+    })
+  }
+
+  async function handleSaveEdit(id) {
+    try {
+      const updated = await updateExpense(id, {
+        description: editForm.description.trim(),
+        amount: parseFloat(editForm.amount),
+        category: editForm.category,
+        date: editForm.date,
+      })
+      setExpenses((prev) => prev.map((exp) => (exp.id === id ? updated : exp)))
+      setEditingId(null)
+      // Refresh summary
+      getAnalyticsSummary().then(setSummary).catch(() => {})
+      getAnalyticsCategories().then((cats) => setCategories(withCategoryColors(cats.categories))).catch(() => {})
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
   const filtered = expenses.filter((t) =>
     (t.description?.toLowerCase() ?? '').includes(query.toLowerCase()) ||
     t.category.toLowerCase().includes(query.toLowerCase())
@@ -792,29 +826,95 @@ export default function Expenses() {
                     <th className="text-left font-medium px-5 py-2.5">Category</th>
                     <th className="text-left font-medium px-5 py-2.5">Date</th>
                     <th className="text-right font-medium px-5 py-2.5">Amount</th>
+                    <th className="text-right font-medium px-5 py-2.5">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((t) => (
-                    <tr key={t.id}
-                      className="border-b border-line-light dark:border-line last:border-0
-                        hover:bg-ink-950/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-                      <td className="px-5 py-3">
-                        <p className="font-medium truncate max-w-[200px]">{t.description || '—'}</p>
-                        <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">ID {t.id}</p>
-                      </td>
-                      <td className="px-5 py-3">
-                        <Badge tone={categoryTone[t.category] ?? 'neutral'}>{t.category}</Badge>
-                      </td>
-                      <td className="px-5 py-3 text-ledger-light-secondary dark:text-ledger-dark-secondary">{t.date}</td>
-                      <td className="px-5 py-3 text-right ledger-num font-medium text-signal-red">
-                        -{fmt(t.amount)}
-                      </td>
-                    </tr>
-                  ))}
+                  {filtered.map((t) => {
+                    if (editingId === t.id) {
+                      return (
+                        <tr key={t.id} className="border-b border-line-light dark:border-line last:border-0 bg-vault/[0.02]">
+                          <td className="px-5 py-2">
+                            <input
+                              type="text"
+                              value={editForm.description}
+                              onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                              className="h-8 px-2 w-full rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none"
+                            />
+                          </td>
+                          <td className="px-5 py-2">
+                            <select
+                              value={editForm.category}
+                              onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                              className="h-8 px-2 w-full rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none"
+                            >
+                              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-5 py-2">
+                            <input
+                              type="date"
+                              value={editForm.date}
+                              onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                              className="h-8 px-2 w-full rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none"
+                            />
+                          </td>
+                          <td className="px-5 py-2">
+                            <input
+                              type="number"
+                              value={editForm.amount}
+                              onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                              className="h-8 px-2 w-full rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-right text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none"
+                            />
+                          </td>
+                          <td className="px-5 py-2 text-right whitespace-nowrap">
+                            <button
+                              onClick={() => handleSaveEdit(t.id)}
+                              className="text-xs text-signal-green font-semibold mr-2 hover:underline"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="text-xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary hover:underline"
+                            >
+                              Cancel
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    }
+
+                    return (
+                      <tr key={t.id}
+                        className="border-b border-line-light dark:border-line last:border-0
+                          hover:bg-ink-950/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="px-5 py-3">
+                          <p className="font-medium truncate max-w-[200px]">{t.description || '—'}</p>
+                          <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">ID {t.id}</p>
+                        </td>
+                        <td className="px-5 py-3">
+                          <Badge tone={categoryTone[t.category] ?? 'neutral'}>{t.category}</Badge>
+                        </td>
+                        <td className="px-5 py-3 text-ledger-light-secondary dark:text-ledger-dark-secondary">{t.date}</td>
+                        <td className="px-5 py-3 text-right ledger-num font-medium text-signal-red">
+                          -{fmt(t.amount)}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <button
+                            onClick={() => startEdit(t)}
+                            className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary hover:text-vault transition-colors inline-flex items-center gap-1 text-xs"
+                            title="Edit expense"
+                          >
+                            <Edit2 size={12} /> Edit
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-5 py-10 text-center
+                      <td colSpan={5} className="px-5 py-10 text-center
                         text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
                         {expenses.length === 0
                           ? 'No expenses yet — add one or import a CSV.'
