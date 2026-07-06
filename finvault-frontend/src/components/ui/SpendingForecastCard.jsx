@@ -13,7 +13,7 @@ export default function SpendingForecastCard({ data }) {
   if (!data) return null
 
   const { linear_regression: lr, arima, recommended, data_points_used } = data
-  const recommendedLabel = recommended === 'arima' ? 'ARIMA' : 'Linear Regression'
+  const recommendedLabel = recommended === 'arima' ? 'Advanced Forecast' : 'Trend Forecast'
 
   return (
     <Card accent="blue">
@@ -36,7 +36,7 @@ export default function SpendingForecastCard({ data }) {
             <div className="flex items-center gap-1.5">
               <TrendingUp size={12} className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary" />
               <p className="text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary">
-                Linear Regression
+                Trend-based Forecast
               </p>
               {recommended === 'linear_regression' && (
                 <span className="text-2xs px-1.5 py-0.5 rounded-full bg-signal-blue/10 text-signal-blue font-medium">
@@ -44,15 +44,13 @@ export default function SpendingForecastCard({ data }) {
                 </span>
               )}
             </div>
-            {lr?.model_r2 !== null && lr?.model_r2 !== undefined && (
-              <span className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-                R² {lr.model_r2}
-              </span>
-            )}
+            <span className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+              Basic Model
+            </span>
           </div>
           <p className="ledger-num text-xl font-semibold">{fmt(lr?.next_month_prediction ?? 0)}</p>
           <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-0.5">
-            Trend-based extrapolation
+            Estimates future spending based on average monthly direction.
           </p>
         </div>
 
@@ -65,7 +63,7 @@ export default function SpendingForecastCard({ data }) {
               <div className="flex items-center gap-1.5">
                 <Brain size={12} className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary" />
                 <p className="text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary">
-                  ARIMA (2,1,1)
+                  Smart Adaptive Forecast
                 </p>
                 {recommended === 'arima' && (
                   <span className="text-2xs px-1.5 py-0.5 rounded-full bg-signal-blue/10 text-signal-blue font-medium">
@@ -73,21 +71,19 @@ export default function SpendingForecastCard({ data }) {
                   </span>
                 )}
               </div>
-              {arima.model_aic && (
-                <span className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-                  AIC {Math.round(arima.model_aic)}
-                </span>
-              )}
+              <span className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
+                Advanced Model
+              </span>
             </div>
             <p className="ledger-num text-xl font-semibold">{fmt(arima.next_month_prediction)}</p>
             <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-0.5">
-              Captures autocorrelation & short-term patterns
+              Analyzes seasonal spending shifts, billing cycles, and recent habits.
             </p>
           </div>
         ) : (
           <div className="rounded-md border border-dashed border-line-light dark:border-line p-3">
             <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">
-              ARIMA requires 6+ months of data. Add more expenses to unlock.
+              Advanced adaptive forecasting requires 6+ months of transaction history.
             </p>
           </div>
         )}
