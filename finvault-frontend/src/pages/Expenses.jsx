@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2 } from 'lucide-react'
+import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2, Trash2 } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
@@ -14,6 +14,7 @@ import {
   createExpense,
   parseNaturalLanguageExpense,
   updateExpense,
+  deleteExpense,
 } from '../services/api.js'
 import { withCategoryColors } from '../utils/categoryColors.js'
 
@@ -716,6 +717,19 @@ export default function Expenses() {
     }
   }
 
+  async function handleDeleteExpense(id) {
+    if (!window.confirm("Are you sure you want to delete this expense?")) return
+    try {
+      await deleteExpense(id)
+      setExpenses((prev) => prev.filter((exp) => exp.id !== id))
+      // Refresh summary
+      getAnalyticsSummary().then(setSummary).catch(() => {})
+      getAnalyticsCategories().then((cats) => setCategories(withCategoryColors(cats.categories))).catch(() => {})
+    } catch (err) {
+      alert(err.message)
+    }
+  }
+
   const filtered = expenses.filter((t) =>
     (t.description?.toLowerCase() ?? '').includes(query.toLowerCase()) ||
     t.category.toLowerCase().includes(query.toLowerCase())
@@ -900,13 +914,20 @@ export default function Expenses() {
                         <td className="px-5 py-3 text-right ledger-num font-medium text-signal-red">
                           -{fmt(t.amount)}
                         </td>
-                        <td className="px-5 py-3 text-right">
+                        <td className="px-5 py-3 text-right whitespace-nowrap">
                           <button
                             onClick={() => startEdit(t)}
-                            className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary hover:text-vault transition-colors inline-flex items-center gap-1 text-xs"
+                            className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary hover:text-vault transition-colors inline-flex items-center gap-1 text-xs mr-3"
                             title="Edit expense"
                           >
                             <Edit2 size={12} /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteExpense(t.id)}
+                            className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary hover:text-signal-red transition-colors inline-flex items-center gap-1 text-xs"
+                            title="Delete expense"
+                          >
+                            <Trash2 size={12} /> Delete
                           </button>
                         </td>
                       </tr>
