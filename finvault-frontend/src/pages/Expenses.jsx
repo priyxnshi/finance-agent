@@ -362,29 +362,50 @@ function AddExpenseForm({ onCreated, onCancel }) {
           {/* Parsed Preview Card */}
           {parsedPreview && (
             <div className="mt-3 p-3 rounded-md bg-paper dark:bg-ink-900 border border-line-light dark:border-white/5 space-y-2 animate-fadeIn">
-              <p className="text-2xs font-semibold text-ledger-light-secondary dark:text-ledger-dark-secondary uppercase tracking-wider">Parsed Result Preview</p>
+              <p className="text-2xs font-semibold text-ledger-light-secondary dark:text-ledger-dark-secondary uppercase tracking-wider">Parsed Result Preview (Click to Edit)</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Description</span>
-                  <span className="text-ledger-light-primary dark:text-ledger-dark-primary font-medium">{parsedPreview.description}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Description</label>
+                  <input
+                    type="text"
+                    value={parsedPreview.description}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, description: e.target.value })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  />
                 </div>
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Amount</span>
-                  <span className="text-signal-red font-medium">₹{parsedPreview.amount}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={parsedPreview.amount}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, amount: parseFloat(e.target.value) || '' })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  />
                 </div>
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Category</span>
-                  <span className="text-ledger-light-primary dark:text-ledger-dark-primary font-medium">{parsedPreview.category}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Category</label>
+                  <select
+                    value={parsedPreview.category}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, category: e.target.value })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  >
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Date</span>
-                  <span className="text-ledger-light-primary dark:text-ledger-dark-primary font-medium">{parsedPreview.date}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Date</label>
+                  <input
+                    type="date"
+                    value={parsedPreview.date}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, date: e.target.value })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  />
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleConfirmParsed}
-                disabled={submitting}
+                disabled={submitting || !parsedPreview.description || !parsedPreview.amount}
                 className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-signal-green text-ink-950 font-semibold text-xs hover:bg-signal-green/90 transition"
               >
                 <Check size={12} /> Confirm & Save Expense
@@ -436,29 +457,50 @@ function AddExpenseForm({ onCreated, onCancel }) {
           {/* Parsed Preview Card */}
           {parsedPreview && (
             <div className="w-full p-3 rounded-md bg-paper dark:bg-ink-900 border border-line-light dark:border-white/5 space-y-2 text-left animate-fadeIn">
-              <p className="text-2xs font-semibold text-ledger-light-secondary dark:text-ledger-dark-secondary uppercase tracking-wider">Parsed Result Preview</p>
+              <p className="text-2xs font-semibold text-ledger-light-secondary dark:text-ledger-dark-secondary uppercase tracking-wider">Parsed Result Preview (Click to Edit)</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Description</span>
-                  <span className="text-ledger-light-primary dark:text-ledger-dark-primary font-medium">{parsedPreview.description}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Description</label>
+                  <input
+                    type="text"
+                    value={parsedPreview.description}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, description: e.target.value })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  />
                 </div>
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Amount</span>
-                  <span className="text-signal-red font-medium">₹{parsedPreview.amount}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={parsedPreview.amount}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, amount: parseFloat(e.target.value) || '' })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  />
                 </div>
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Category</span>
-                  <span className="text-ledger-light-primary dark:text-ledger-dark-primary font-medium">{parsedPreview.category}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Category</label>
+                  <select
+                    value={parsedPreview.category}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, category: e.target.value })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  >
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div>
-                  <span className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block">Date</span>
-                  <span className="text-ledger-light-primary dark:text-ledger-dark-primary font-medium">{parsedPreview.date}</span>
+                  <label className="text-ledger-light-tertiary dark:text-ledger-dark-tertiary block mb-0.5 text-2xs">Date</label>
+                  <input
+                    type="date"
+                    value={parsedPreview.date}
+                    onChange={(e) => setParsedPreview({ ...parsedPreview, date: e.target.value })}
+                    className="w-full h-8 px-2 rounded border border-line-light dark:border-line bg-paper dark:bg-ink-850 text-xs text-ledger-light-primary dark:text-ledger-dark-primary focus:outline-none focus:ring-1 focus:ring-signal-blue"
+                  />
                 </div>
               </div>
               <button
                 type="button"
                 onClick={handleConfirmParsed}
-                disabled={submitting}
+                disabled={submitting || !parsedPreview.description || !parsedPreview.amount}
                 className="w-full mt-2 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded bg-signal-green text-ink-950 font-semibold text-xs hover:bg-signal-green/90 transition"
               >
                 <Check size={12} /> Confirm & Save Expense
