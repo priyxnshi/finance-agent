@@ -147,4 +147,8 @@ export function getFederatedStatus() {
   return client.get('/api/federated/status').then((res) => res.data)
 }
 
+export function simulateFederatedRound() {
+  return client.post('/api/federated/simulate-round').then((res) => res.data)
+}
+
 export default client

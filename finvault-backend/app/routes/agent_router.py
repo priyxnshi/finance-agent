@@ -71,3 +71,50 @@ async def get_federated_metrics():
         }
     with open(STATE_FILE, "r") as f:
         return json.load(f)
+
+@federated_router.post("/simulate-round")
+async def simulate_federated_round():
+    """Simulates a federated learning round for presentation purposes, updating the fl_state.json file."""
+    if not os.path.exists(STATE_FILE):
+        state = {
+            "status": "Active Aggregator Running",
+            "current_round": 0,
+            "connected_clients": 3,
+            "global_accuracy": 0.0,
+            "aggregation_strategy": "FedAvg",
+            "privacy_status": "Strict (Zero Data Leakage)",
+            "history": []
+        }
+    else:
+        try:
+            with open(STATE_FILE, "r") as f:
+                state = json.load(f)
+        except Exception:
+            state = {
+                "status": "Active Aggregator Running",
+                "current_round": 0,
+                "connected_clients": 3,
+                "global_accuracy": 0.0,
+                "aggregation_strategy": "FedAvg",
+                "privacy_status": "Strict (Zero Data Leakage)",
+                "history": []
+            }
+
+    state["current_round"] += 1
+    state["connected_clients"] = 3
+    state["status"] = "Active Aggregator Running"
+
+    new_accuracy = min(0.45 + (state["current_round"] * 0.08), 0.89)
+    state["global_accuracy"] = round(new_accuracy, 3)
+
+    state["history"].append({
+        "round": state["current_round"],
+        "accuracy": round(new_accuracy, 3),
+        "loss": round(max(0.6 - (state["current_round"] * 0.07), 0.12), 3),
+        "timestamp": time.time()
+    })
+
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, indent=2)
+
+    return state

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Network, Cpu, CheckCircle2, CircleDot, CircleOff, Brain } from 'lucide-react'
+import { Network, Cpu, CheckCircle2, CircleDot, CircleOff, Brain, Play } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -8,7 +8,7 @@ import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
 import MLStatusPanel from '../components/ui/MLStatusPanel.jsx'
 import { LoadingState, ErrorState } from '../components/ui/LoadingError.jsx'
-import { getMLStatus, getFederatedStatus } from '../services/api.js'
+import { getMLStatus, getFederatedStatus, simulateFederatedRound } from '../services/api.js'
 
 const statusConfig = {
   Training:    { tone: 'blue',    icon: CircleDot    },
@@ -34,6 +34,19 @@ export default function FederatedLearning() {
   const [flStatus, setFlStatus] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [simulating, setSimulating] = useState(false)
+
+  async function handleSimulate() {
+    setSimulating(true)
+    try {
+      const updated = await simulateFederatedRound()
+      setFlStatus(updated)
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setSimulating(false)
+    }
+  }
 
   const fetchStatus = useCallback(async () => {
     setLoading(true)
@@ -81,11 +94,21 @@ export default function FederatedLearning() {
   return (
     <div className="space-y-6">
       {/* Intro */}
-      <div className="flex items-center gap-2">
-        <Network size={16} className="text-vault" />
-        <p className="text-sm text-ledger-light-secondary dark:text-ledger-dark-secondary">
-          Phase 4 ML models are active locally. Federated learning status is updated live from the aggregation server.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2">
+          <Network size={16} className="text-vault" />
+          <p className="text-sm text-ledger-light-secondary dark:text-ledger-dark-secondary">
+            Phase 4 ML models are active locally. Federated learning status is updated live from the aggregation server.
+          </p>
+        </div>
+        <button
+          onClick={handleSimulate}
+          disabled={simulating}
+          className="h-9 px-3.5 shrink-0 inline-flex items-center gap-1.5 rounded-md text-xs font-semibold
+            bg-vault text-ink-950 hover:opacity-90 disabled:opacity-50 transition"
+        >
+          <Play size={12} fill="currentColor" /> {simulating ? 'Simulating…' : 'Simulate FL Round'}
+        </button>
       </div>
 
       {/* KPIs */}
