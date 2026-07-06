@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2, Trash2, Download } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { Search, Upload, X, Plus, Loader2, Mic, MicOff, Sparkles, FileText, Users, Check, AlertCircle, Edit2, Trash2, Download, Camera } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import Badge from '../components/ui/Badge.jsx'
 import MetricCard from '../components/ui/MetricCard.jsx'
@@ -25,9 +26,25 @@ const categoryTone = {
   Subscriptions: 'amber', Income: 'green', Other: 'neutral',
 }
 
-const fmt = (n) => `\u20B9${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
+const fmt = (n) => `₹${Math.abs(Math.round(n)).toLocaleString('en-IN')}`
 
-function AddExpenseForm({ onCreated, onCancel }) {
+function evaluateExpression(str) {
+  if (typeof str !== 'string') return null
+  let normalized = str.replace(/x/gi, '*').replace(/÷/g, '/')
+  const clean = normalized.replace(/[^0-9+\-*/.() ]/g, '')
+  if (!clean.trim()) return null
+  try {
+    const result = new Function(`return (${clean})`)()
+    if (typeof result === 'number' && isFinite(result) && !isNaN(result)) {
+      return result
+    }
+  } catch (err) {
+    // ignore parse error while user is typing
+  }
+  return null
+}
+
+export function AddExpenseForm({ onCreated, onCancel }) {
   const [activeTab, setActiveTab] = useState('traditional') // traditional, ai_parse, voice, splitwise
 
   // Core Form State
@@ -58,6 +75,39 @@ function AddExpenseForm({ onCreated, onCancel }) {
     { id: 2, name: 'Bob', selected: true },
     { id: 3, name: 'Charlie', selected: false },
   ])
+
+  const [scanningReceipt, setScanningReceipt] = useState(false)
+
+  const handleReceiptImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setScanningReceipt(true)
+    setTimeout(() => {
+      const nameLower = file.name.toLowerCase()
+      let total = '1800'
+      let desc = 'Restaurant dinner'
+      let cat = 'Food'
+      
+      if (nameLower.includes('cab') || nameLower.includes('uber') || nameLower.includes('travel')) {
+        total = '450'
+        desc = 'Uber ride'
+        cat = 'Travel'
+      } else if (nameLower.includes('bill') || nameLower.includes('electricity') || nameLower.includes('power')) {
+        total = '3200'
+        desc = 'Electricity Bill'
+        cat = 'Bills'
+      } else if (nameLower.includes('shop') || nameLower.includes('clothes') || nameLower.includes('d_mart')) {
+        total = '2499'
+        desc = 'Shopping DMart'
+        cat = 'Shopping'
+      }
+      
+      setSplitTotal(total)
+      setSplitDescription(desc)
+      setSplitCategory(cat)
+      setScanningReceipt(false)
+    }, 1500)
+  }
 
   const CATEGORIES = ["Food", "Travel", "Bills", "Shopping", "Entertainment"]
 
@@ -126,7 +176,8 @@ function AddExpenseForm({ onCreated, onCancel }) {
   function validate() {
     const e = {}
     if (!description.trim()) e.description = 'Required'
-    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) e.amount = 'Enter a positive amount'
+    const evaluated = evaluateExpression(amount) || parseFloat(amount)
+    if (isNaN(evaluated) || evaluated <= 0) e.amount = 'Enter a positive amount'
     if (!category.trim()) e.category = 'Required — or click the AI suggestion'
     if (!date) e.date = 'Required'
     setErrors(e)
@@ -136,11 +187,12 @@ function AddExpenseForm({ onCreated, onCancel }) {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!validate() || submitting) return
+    const finalAmount = evaluateExpression(amount) || parseFloat(amount)
     setSubmitting(true)
     try {
       const created = await createExpense({
         description: description.trim(),
-        amount: parseFloat(amount),
+        amount: finalAmount,
         category: category.trim(),
         date,
       })
@@ -172,7 +224,7 @@ function AddExpenseForm({ onCreated, onCancel }) {
 
   async function handleSplitwiseSubmit(e) {
     e.preventDefault()
-    const parsedTotal = parseFloat(splitTotal)
+    const parsedTotal = evaluateExpression(splitTotal) || parseFloat(splitTotal)
     if (isNaN(parsedTotal) || parsedTotal <= 0) {
       setErrors({ split: 'Enter a valid total bill amount' })
       return
@@ -283,12 +335,27 @@ function AddExpenseForm({ onCreated, onCancel }) {
                 Amount (₹)
               </label>
               <input
-                type="number" min="0.01" step="any"
+                type="text"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                placeholder="e.g. 480"
+                onBlur={() => {
+                  const res = evaluateExpression(amount)
+                  if (res !== null) setAmount(res.toString())
+                }}
+                placeholder="e.g. 500 + 20 * 3"
                 className={fieldCls(errors.amount)}
               />
+              {(() => {
+                const res = evaluateExpression(amount)
+                if (res !== null && res.toString() !== amount.trim()) {
+                  return (
+                    <p className="text-2xs text-vault mt-1 font-medium">
+                      Calculated: ₹{res.toLocaleString('en-IN')}
+                    </p>
+                  )
+                }
+                return null
+              })()}
               {errors.amount && <p className="text-2xs text-signal-red mt-1">{errors.amount}</p>}
             </div>
 
@@ -521,18 +588,61 @@ function AddExpenseForm({ onCreated, onCancel }) {
 
           {errors.split && <p className="text-xs text-signal-red">{errors.split}</p>}
 
+          {/* Receipt Scanning block */}
+          <div className="p-3 rounded-md border border-dashed border-vault/30 bg-vault/[0.01] dark:bg-vault/[0.02] flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold text-ledger-light-primary dark:text-ledger-dark-primary flex items-center gap-1">
+                <Camera size={13} className="text-vault" /> Scan Receipt Image
+              </p>
+              <p className="text-3xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mt-0.5">
+                Simulate AI receipt OCR processing to automatically fill in details
+              </p>
+            </div>
+            <label className="h-8 px-2.5 shrink-0 inline-flex items-center gap-1.5 rounded-md text-2xs font-semibold border border-vault/30 bg-vault/5 text-vault hover:bg-vault/10 cursor-pointer transition">
+              {scanningReceipt ? (
+                <>
+                  <Loader2 size={11} className="animate-spin" /> Scanning…
+                </>
+              ) : (
+                'Upload Bill Image'
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleReceiptImageUpload}
+                disabled={scanningReceipt}
+              />
+            </label>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
                 Total Bill Amount (₹)
               </label>
               <input
-                type="number"
+                type="text"
                 value={splitTotal}
                 onChange={(e) => setSplitTotal(e.target.value)}
+                onBlur={() => {
+                  const res = evaluateExpression(splitTotal)
+                  if (res !== null) setSplitTotal(res.toString())
+                }}
                 placeholder="e.g. 1500"
                 className={fieldCls(null)}
               />
+              {(() => {
+                const res = evaluateExpression(splitTotal)
+                if (res !== null && res.toString() !== splitTotal.trim()) {
+                  return (
+                    <p className="text-2xs text-vault mt-1 font-medium">
+                      Calculated: ₹{res.toLocaleString('en-IN')}
+                    </p>
+                  )
+                }
+                return null
+              })()}
             </div>
 
             <div>
@@ -593,16 +703,22 @@ function AddExpenseForm({ onCreated, onCancel }) {
             </div>
           </div>
 
-          {splitTotal && parseFloat(splitTotal) > 0 && (
-            <div className="p-3 rounded-md bg-vault/5 border border-vault/20 text-xs flex justify-between items-center animate-fadeIn">
-              <span>
-                Total shares: <strong>{splitFriends.filter(f => f.selected).length + 1} people</strong> (You + {splitFriends.filter(f => f.selected).map(f => f.name).join(', ') || 'No one'})
-              </span>
-              <span className="text-vault font-semibold">
-                Your Share: ₹{(parseFloat(splitTotal) / (splitFriends.filter(f => f.selected).length + 1)).toFixed(2)}
-              </span>
-            </div>
-          )}
+          {(() => {
+            const evaluatedTotal = evaluateExpression(splitTotal) || parseFloat(splitTotal)
+            if (evaluatedTotal && evaluatedTotal > 0) {
+              return (
+                <div className="p-3 rounded-md bg-vault/5 border border-vault/20 text-xs flex justify-between items-center animate-fadeIn">
+                  <span>
+                    Total shares: <strong>{splitFriends.filter(f => f.selected).length + 1} people</strong> (You + {splitFriends.filter(f => f.selected).map(f => f.name).join(', ') || 'No one'})
+                  </span>
+                  <span className="text-vault font-semibold">
+                    Your Share: ₹{(evaluatedTotal / (splitFriends.filter(f => f.selected).length + 1)).toFixed(2)}
+                  </span>
+                </div>
+              )
+            }
+            return null
+          })()}
 
           <div className="flex gap-2 pt-1">
             <button
@@ -639,6 +755,15 @@ export default function Expenses() {
   const [uploadResult, setUploadResult] = useState(null)
   const [showAddForm, setShowAddForm] = useState(false)
 
+  const location = useLocation()
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get('add') === 'true') {
+      setShowAddForm(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [location])
+
   const fetchAll = useCallback(async () => {
     setLoading(true)
     setError('')
@@ -663,6 +788,7 @@ export default function Expenses() {
   function handleCreated(expense) {
     setExpenses((prev) => [expense, ...prev])
     setShowAddForm(false)
+    window.history.replaceState(null, '', window.location.pathname)
     // Refresh summary totals in background
     getAnalyticsSummary().then(setSummary).catch(() => {})
   }
@@ -785,12 +911,19 @@ export default function Expenses() {
             </Card>
           )}
 
-          {/* Add form */}
+          {/* Add form Modal Popup Overlay */}
           {showAddForm && (
-            <AddExpenseForm
-              onCreated={handleCreated}
-              onCancel={() => setShowAddForm(false)}
-            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+              <div className="max-w-xl w-full bg-paper dark:bg-ink-900 border border-line-light dark:border-white/10 rounded-card shadow-2xl">
+                <AddExpenseForm
+                  onCreated={handleCreated}
+                  onCancel={() => {
+                    setShowAddForm(false)
+                    window.history.replaceState(null, '', window.location.pathname)
+                  }}
+                />
+              </div>
+            </div>
           )}
 
           {/* Upload result banner */}

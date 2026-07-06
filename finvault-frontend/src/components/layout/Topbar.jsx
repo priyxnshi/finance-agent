@@ -1,8 +1,9 @@
 import React from 'react'
-import { Menu, Search, Sun, Moon, Bell } from 'lucide-react'
+import { Menu, Sun, Moon, Bell, Plus } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext.jsx'
 
-export default function Topbar({ onMenuClick, title }) {
+export default function Topbar({ onMenuClick, onAddExpenseClick, title }) {
   const { theme, toggleTheme } = useTheme()
 
   return (
@@ -21,23 +22,17 @@ export default function Topbar({ onMenuClick, title }) {
           </h1>
         </div>
 
-        <div className="hidden md:flex items-center flex-1 max-w-sm">
-          <div className="relative w-full">
-            <Search
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-ledger-light-tertiary dark:text-ledger-dark-tertiary"
-            />
-            <input
-              type="text"
-              placeholder="Search transactions, goals…"
-              className="w-full h-9 pl-9 pr-3 rounded-md text-sm bg-paper dark:bg-ink-850 border border-line-light dark:border-line
-                placeholder:text-ledger-light-tertiary dark:placeholder:text-ledger-dark-tertiary
-                focus:outline-none focus:ring-2 focus:ring-signal-blue/40 focus:border-signal-blue/60 transition"
-            />
-          </div>
-        </div>
+
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={onAddExpenseClick}
+            className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-semibold
+              bg-vault text-ink-950 hover:opacity-90 shadow-md transition"
+          >
+            <Plus size={14} /> <span className="hidden sm:inline">Add Expense</span>
+          </button>
+
           <button
             onClick={toggleTheme}
             className="h-9 w-9 grid place-items-center rounded-md border border-line-light dark:border-line
