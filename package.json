@@ -1,0 +1,14 @@
+{
+  "name": "finance-agent",
+  "private": true,
+  "workspaces": [
+    "finvault-frontend",
+    "finvault-landing"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev -w finvault-frontend",
+    "dev:landing": "npm run dev -w finvault-landing",
+    "build:frontend": "npm run build -w finvault-frontend",
+    "build:landing": "npm run build -w finvault-landing"
+  }
+}

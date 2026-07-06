@@ -13,6 +13,7 @@ from datetime import date as date_type
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -20,6 +21,17 @@ from app.schemas.expense import ExpenseCreate, ExpenseOut, ExpenseUpdate
 from app.services import expense_service
 
 router = APIRouter(tags=["Expenses"])
+
+
+class ParseRequest(BaseModel):
+    text: str
+
+
+@router.post("/expense/parse")
+def parse_expense(payload: ParseRequest):
+    """Parse a natural language text description into expense details."""
+    from app.services.nlp_parser import parse_expense_text
+    return parse_expense_text(payload.text)
 
 
 @router.post("/expense", response_model=ExpenseOut, status_code=status.HTTP_201_CREATED)

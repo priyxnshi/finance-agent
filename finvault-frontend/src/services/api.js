@@ -39,6 +39,10 @@ export function createExpense(payload) {
   return client.post('/expense', payload).then((res) => res.data)
 }
 
+export function parseNaturalLanguageExpense(text) {
+  return client.post('/expense/parse', { text }).then((res) => res.data)
+}
+
 export function updateExpense(id, payload) {
   return client.put(`/expense/${id}`, payload).then((res) => res.data)
 }
