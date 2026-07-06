@@ -44,7 +44,7 @@ from app.ml.model_registry import (
 
 MODEL_LR = "spending_lr"
 MODEL_ARIMA = "spending_arima"
-MIN_POINTS_ARIMA = 6
+MIN_POINTS_ARIMA = 3
 MIN_POINTS_LR = 3
 
 _lr_model = None
@@ -93,7 +93,8 @@ def train(monthly_totals: list[float]) -> dict:
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                model = ARIMA(y, order=(2, 1, 1))
+                order = (2, 1, 1) if n >= 6 else (1, 0, 0)
+                model = ARIMA(y, order=order)
                 result = model.fit()
 
             save_pickle(result, MODEL_ARIMA)
