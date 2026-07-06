@@ -75,7 +75,7 @@ export default function AnomalyFeed({ scanned, anomaliesFound, results = [] }) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="ledger-num font-semibold text-signal-red">
-                      \u20B9{Number(item.amount).toLocaleString('en-IN')}
+                      ₹{Number(item.amount).toLocaleString('en-IN')}
                     </p>
                     <Badge tone="red">Anomaly</Badge>
                   </div>
