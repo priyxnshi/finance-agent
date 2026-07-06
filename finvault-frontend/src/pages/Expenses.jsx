@@ -686,6 +686,7 @@ export default function Expenses() {
 
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({ description: '', amount: '', category: '', date: '' })
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All')
 
   const CATEGORIES = ["Food", "Travel", "Bills", "Shopping", "Entertainment"]
 
@@ -751,10 +752,12 @@ export default function Expenses() {
     document.body.removeChild(link)
   }
 
-  const filtered = expenses.filter((t) =>
-    (t.description?.toLowerCase() ?? '').includes(query.toLowerCase()) ||
-    t.category.toLowerCase().includes(query.toLowerCase())
-  )
+  const filtered = expenses.filter((t) => {
+    const matchesQuery = (t.description?.toLowerCase() ?? '').includes(query.toLowerCase()) ||
+      t.category.toLowerCase().includes(query.toLowerCase())
+    const matchesCategory = selectedCategoryFilter === 'All' || t.category === selectedCategoryFilter
+    return matchesQuery && matchesCategory
+  })
 
   return (
     <div className="space-y-6">
@@ -832,6 +835,18 @@ export default function Expenses() {
                       focus:ring-2 focus:ring-signal-blue/40 focus:border-signal-blue/60 transition"
                   />
                 </div>
+                <select
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  className="h-9 px-2 rounded-md text-sm bg-paper dark:bg-ink-850 border
+                    border-line-light dark:border-line w-36 focus:outline-none
+                    focus:ring-2 focus:ring-signal-blue/40 focus:border-signal-blue/60 transition text-ledger-light-primary dark:text-ledger-dark-primary"
+                >
+                  <option value="All">All Categories</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
                 <button
                   onClick={() => setShowAddForm((v) => !v)}
                   className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-sm font-medium
@@ -861,6 +876,15 @@ export default function Expenses() {
                 </button>
               </div>
             </div>
+
+            {selectedCategoryFilter !== 'All' && (
+              <div className="px-5 py-2.5 flex justify-between items-center text-xs text-ledger-light-secondary dark:text-ledger-dark-secondary bg-vault/[0.03] border-t border-b border-line-light dark:border-line">
+                <span>Showing transactions for: <strong className="text-vault">{selectedCategoryFilter}</strong></span>
+                <span>
+                  Total Spent: <strong className="text-vault font-semibold">₹{filtered.reduce((acc, t) => acc + (t.amount || 0), 0).toLocaleString('en-IN')}</strong>
+                </span>
+              </div>
+            )}
 
             <div className="mt-4 overflow-x-auto">
               <table className="w-full text-sm">
