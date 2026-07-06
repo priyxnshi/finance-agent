@@ -217,13 +217,7 @@ export default function Insights() {
         )
       }
 
-      {/* Category breakdown */}
-      <div className="grid grid-cols-1 gap-4">
-        <Card accent="amber">
-          <h3 className="font-display font-semibold text-sm tracking-tight mb-4">Category Breakdown</h3>
-          <CategoryBarChart data={categories} />
-        </Card>
-      </div>
+
 
       {/* Configure Budgets Modal */}
       {showBudgetModal && (
