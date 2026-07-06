@@ -58,11 +58,11 @@ class FinVaultAIAgent:
                     # User is highly resistant to aggressive pruning options. Change strategy.
                     strategy = "supportive"
                     title = f"Optimize Liquidity for {category}"
-                    body = f"Pruning {category} hasn't worked. Let's leave this budget intact and auto-transfer $50 to savings on payday to offset it."
+                    body = f"Pruning {category} hasn't worked. Let's leave this budget intact and auto-transfer ₹50 to savings on payday to offset it."
                 else:
                     strategy = "aggressive"
                     title = f"Reduce {category} Expenses"
-                    body = f"Your spending in {category} is over budget by ${round(totals['amount'] - totals['budget'], 2)}. Recommend reduction."
+                    body = f"Your spending in {category} is over budget by ₹{round(totals['amount'] - totals['budget'], 2)}. Recommend reduction."
 
                 recommendations.append({
                     "id": f"rec_{category}_{int(datetime.utcnow().timestamp())}",
