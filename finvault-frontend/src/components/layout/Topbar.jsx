@@ -2,6 +2,7 @@ import React from 'react'
 import { Menu, Sun, Moon, Bell, Plus } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useTheme } from '../../context/ThemeContext.jsx'
+import { getAgentRecommendations } from '../../services/api.js'
 
 export default function Topbar({ onMenuClick, onAddExpenseClick, title }) {
   const { theme, toggleTheme } = useTheme()
@@ -10,15 +11,13 @@ export default function Topbar({ onMenuClick, onAddExpenseClick, title }) {
   const dropdownRef = React.useRef(null)
 
   React.useEffect(() => {
-    import('../../services/api.js').then(({ getAgentRecommendations }) => {
-      getAgentRecommendations()
-        .then((data) => {
-          if (data && data.recommendations) {
-            setNotificationsList(data.recommendations)
-          }
-        })
-        .catch((err) => console.error('Error fetching notifications:', err))
-    })
+    getAgentRecommendations()
+      .then((data) => {
+        if (data && data.recommendations) {
+          setNotificationsList(data.recommendations)
+        }
+      })
+      .catch((err) => console.error('Error fetching notifications:', err))
   }, [])
   
   React.useEffect(() => {
