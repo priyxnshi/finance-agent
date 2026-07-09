@@ -165,5 +165,9 @@ export function testTelegramMessage() {
   return client.post('/api/telegram/test').then((res) => res.data)
 }
 
+export function getAgentRecommendations() {
+  return client.get('/api/agent/recommendations').then((res) => res.data)
+}
+
 export default client
 

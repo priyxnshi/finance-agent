@@ -120,6 +120,58 @@ async def record_user_feedback(payload: UserFeedbackRequest, db: Session = Depen
     )
     return {"status": "Telemetry processed. Local adaptation matrix calibrated."}
 
+@router.get("/recommendations")
+async def get_agent_recommendations(db: Session = Depends(get_db)):
+    from app.services.analytics_service import build_summary, build_categories
+    from app.services.goal_service import list_goals, compute_goal_progress
+    
+    summary = build_summary(db)
+    categories = build_categories(db)
+    
+    anomalies_count = 0
+    try:
+        from app.ml.anomaly_detector import detect_from_db
+        anomalies = detect_from_db(db)
+        anomalies_count = len([a for a in anomalies if a.get("anomaly")])
+    except Exception:
+        pass
+        
+    goals = list_goals(db)
+    goal_prob = 1.0
+    if goals:
+        probs = []
+        for g in goals:
+            prog = compute_goal_progress(g)
+            probs.append(prog.progress_percent / 100.0)
+        goal_prob = sum(probs) / len(probs)
+        
+    DEFAULT_BUDGETS = {
+        "Food": 4000.0,
+        "Travel": 2500.0,
+        "Bills": 8000.0,
+        "Shopping": 5000.0,
+        "Entertainment": 3000.0,
+        "Other": 1500.0
+    }
+    
+    breakdown = {}
+    for cat in categories.breakdown:
+        breakdown[cat.category] = {
+            "amount": cat.amount,
+            "budget": DEFAULT_BUDGETS.get(cat.category, 99999.0)
+        }
+        
+    agent = FinVaultAIAgent(db)
+    health = agent.analyze_financial_health(
+        summary.monthly_spending, 50000.0,
+        goal_prob, anomalies_count
+    )
+    
+    actions = agent.compute_agent_actions(breakdown, health)
+    return {
+        "recommendations": actions
+    }
+
 @federated_router.get("/status")
 async def get_federated_metrics():
     """Reads state summaries produced by the underlying Flower orchestration process."""
