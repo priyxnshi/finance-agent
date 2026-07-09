@@ -210,7 +210,7 @@ export default function Dashboard() {
         <Card accent="blue">
           <h3 className="font-display font-semibold text-sm tracking-tight mb-1">Spend by Category</h3>
           <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mb-2">All time · live</p>
-          <CategoryDonut data={donutData} />
+          <CategoryDonut data={donutData} label="total" />
         </Card>
       </div>
 

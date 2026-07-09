@@ -151,4 +151,19 @@ export function simulateFederatedRound() {
   return client.post('/api/federated/simulate-round').then((res) => res.data)
 }
 
+// --- Telegram Integration -----------------------------------------------
+
+export function getTelegramSettings() {
+  return client.get('/api/telegram/settings').then((res) => res.data)
+}
+
+export function updateTelegramSettings(payload) {
+  return client.post('/api/telegram/settings', payload).then((res) => res.data)
+}
+
+export function testTelegramMessage() {
+  return client.post('/api/telegram/test').then((res) => res.data)
+}
+
 export default client
+

@@ -14,7 +14,7 @@ function CustomTooltip({ active, payload }) {
   )
 }
 
-export default function CategoryDonut({ data }) {
+export default function CategoryDonut({ data, label = 'total' }) {
   const total = data.reduce((sum, d) => sum + d.value, 0)
 
   if (data.length === 0) {
@@ -50,7 +50,7 @@ export default function CategoryDonut({ data }) {
       <div className="absolute inset-0 grid place-items-center pointer-events-none">
         <div className="text-center -mt-2">
           <p className="ledger-num text-xl font-semibold">₹{Math.round(total / 1000)}k</p>
-          <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">this month</p>
+          <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary">{label}</p>
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-2">

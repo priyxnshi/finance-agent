@@ -1,8 +1,9 @@
 import React from 'react'
-import { Sun, Moon, Bell, Shield, Database } from 'lucide-react'
+import { Sun, Moon, Bell, Shield, Database, Send, MessageSquare } from 'lucide-react'
 import Card from '../components/ui/Card.jsx'
 import Button from '../components/ui/Button.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
+import { getTelegramSettings, updateTelegramSettings, testTelegramMessage } from '../services/api.js'
 
 function Toggle({ checked, onChange }) {
   return (
@@ -44,6 +45,54 @@ export default function Settings() {
   const [notifications, setNotifications] = React.useState(true)
   const [weeklyDigest, setWeeklyDigest] = React.useState(false)
   const [shareForFL, setShareForFL] = React.useState(true)
+
+  const [botToken, setBotToken] = React.useState('')
+  const [chatId, setChatId] = React.useState('')
+  const [savingTelegram, setSavingTelegram] = React.useState(false)
+  const [testingTelegram, setTestingTelegram] = React.useState(false)
+  const [telegramStatus, setTelegramStatus] = React.useState('')
+
+  React.useEffect(() => {
+    getTelegramSettings()
+      .then((data) => {
+        if (data) {
+          setBotToken(data.telegram_bot_token || '')
+          setChatId(data.telegram_chat_id || '')
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load Telegram settings:', err)
+      })
+  }, [])
+
+  async function handleSaveTelegramSettings() {
+    setSavingTelegram(true)
+    setTelegramStatus('')
+    try {
+      await updateTelegramSettings({
+        telegram_bot_token: botToken,
+        telegram_chat_id: chatId,
+      })
+      setTelegramStatus('Settings saved successfully! Backend service is reloading.')
+    } catch (err) {
+      setTelegramStatus(`Failed to save settings: ${err.message}`)
+    } finally {
+      setSavingTelegram(false)
+    }
+  }
+
+  async function handleSendTestNotification() {
+    setTestingTelegram(true)
+    setTelegramStatus('')
+    try {
+      await testTelegramMessage()
+      setTelegramStatus('Test notification sent successfully!')
+    } catch (err) {
+      setTelegramStatus(`Failed to send test: ${err.message}`)
+    } finally {
+      setTestingTelegram(false)
+    }
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -94,6 +143,69 @@ export default function Settings() {
           />
         </div>
       </Card>
+
+      <Card>
+        <h3 className="font-display font-semibold text-sm tracking-tight mb-1 flex items-center gap-1.5">
+          <MessageSquare size={16} className="text-vault" /> Telegram Bot Integration
+        </h3>
+        <p className="text-2xs text-ledger-light-tertiary dark:text-ledger-dark-tertiary mb-3">
+          Configure credentials to log expenses and receive alerts directly via Telegram.
+        </p>
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
+                Bot Token
+              </label>
+              <input
+                type="text"
+                value={botToken}
+                onChange={(e) => setBotToken(e.target.value)}
+                placeholder="e.g. 123456:ABC-DEF..."
+                className="w-full h-8 rounded-md border border-line-light dark:border-white/10 bg-paper dark:bg-ink-950 px-2.5 text-2xs focus:border-vault focus:ring-1 focus:ring-vault outline-none transition"
+              />
+            </div>
+            <div>
+              <label className="block text-2xs font-medium text-ledger-light-secondary dark:text-ledger-dark-secondary mb-1">
+                Chat ID
+              </label>
+              <input
+                type="text"
+                value={chatId}
+                onChange={(e) => setChatId(e.target.value)}
+                placeholder="e.g. 987654321"
+                className="w-full h-8 rounded-md border border-line-light dark:border-white/10 bg-paper dark:bg-ink-950 px-2.5 text-2xs focus:border-vault focus:ring-1 focus:ring-vault outline-none transition"
+              />
+            </div>
+          </div>
+          
+          {telegramStatus && (
+            <p className={`text-2xs font-medium ${telegramStatus.includes('Failed') ? 'text-signal-red' : 'text-signal-green'}`}>
+              {telegramStatus}
+            </p>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <Button
+              variant="secondary"
+              onClick={handleSaveTelegramSettings}
+              disabled={savingTelegram}
+              className="text-2xs py-1 px-2.5"
+            >
+              {savingTelegram ? 'Saving...' : 'Save Config'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleSendTestNotification}
+              disabled={testingTelegram}
+              className="text-2xs py-1 px-2.5 border-vault/30 text-vault hover:bg-vault/5"
+            >
+              {testingTelegram ? 'Sending...' : 'Send Test'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+
 
       <Card>
         <h3 className="font-display font-semibold text-sm tracking-tight mb-1">Privacy &amp; Data</h3>

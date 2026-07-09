@@ -1,0 +1,22 @@
+{
+  "status": "Active Aggregator Running",
+  "current_round": 2,
+  "connected_clients": 3,
+  "global_accuracy": 0.61,
+  "aggregation_strategy": "FedAvg",
+  "privacy_status": "Strict (Zero Data Leakage)",
+  "history": [
+    {
+      "round": 1,
+      "accuracy": 0.53,
+      "loss": 0.53,
+      "timestamp": 1783345892.7599795
+    },
+    {
+      "round": 2,
+      "accuracy": 0.61,
+      "loss": 0.46,
+      "timestamp": 1783611873.6511884
+    }
+  ]
+}

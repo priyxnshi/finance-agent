@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     app_name: str = "Finvault API"
     app_version: str = "0.2.0"
 
+    telegram_bot_token: str = "8113774306:AAG7h42s4qj-NlOXHbVUVGhZubqF13Bg3FA"
+    telegram_chat_id: str = "2137738715"
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     @property

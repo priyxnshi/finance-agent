@@ -31,6 +31,20 @@ def create_goal(db: Session, payload: GoalCreate) -> Goal:
     db.add(goal)
     db.commit()
     db.refresh(goal)
+    
+    try:
+        from app.services.telegram_service import send_telegram_notification
+        msg = (
+            f"🎯 <b>New Savings Goal Set</b>\n"
+            f"━━━━━━━━━━━━━━━━━━━━━\n"
+            f"<b>Name:</b> {goal.name}\n"
+            f"<b>Target:</b> ₹{goal.target_amount:,.2f}\n"
+            f"<b>Target Date:</b> {goal.target_date}"
+        )
+        send_telegram_notification(msg)
+    except Exception:
+        pass
+        
     return goal
 
 
@@ -48,12 +62,33 @@ def update_goal(db: Session, goal_id: int, payload: GoalUpdate) -> Optional[Goal
     if goal is None:
         return None
 
+    old_amount = goal.current_amount or 0.0
+
     updates = payload.model_dump(exclude_unset=True)
     for field, value in updates.items():
         setattr(goal, field, value)
 
     db.commit()
     db.refresh(goal)
+
+    new_amount = goal.current_amount or 0.0
+    if old_amount != new_amount:
+        try:
+            from app.services.telegram_service import send_telegram_notification
+            progress = compute_goal_progress(goal)
+            status_msg = "🎉 <b>Goal Achieved!</b>\n" if progress.progress_percent >= 100.0 else "🎯 <b>Goal Progress Update</b>\n"
+            msg = (
+                f"{status_msg}"
+                f"━━━━━━━━━━━━━━━━━━━━━\n"
+                f"<b>Goal:</b> {goal.name}\n"
+                f"<b>Contribution:</b> +₹{new_amount - old_amount:,.2f}\n"
+                f"<b>Current Balance:</b> ₹{new_amount:,.2f} of ₹{goal.target_amount:,.2f} ({progress.progress_percent}%)\n"
+                f"<b>Pace Status:</b> {progress.pace_status.upper()}"
+            )
+            send_telegram_notification(msg)
+        except Exception:
+            pass
+
     return goal
 
 

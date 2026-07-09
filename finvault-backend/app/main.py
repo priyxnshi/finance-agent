@@ -40,6 +40,8 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     init_db()
+    from app.services.telegram_service import start_telegram_polling
+    start_telegram_polling()
 
 
 # --- Centralized error handling -------------------------------------------
@@ -72,6 +74,7 @@ app.include_router(goals.router)
 app.include_router(ml.router)
 app.include_router(agent_router.router)
 app.include_router(agent_router.federated_router)
+app.include_router(agent_router.telegram_router)
 
 
 @app.get("/", tags=["Health"])
